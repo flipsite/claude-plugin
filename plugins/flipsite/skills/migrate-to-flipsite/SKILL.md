@@ -102,14 +102,56 @@ Detect and report:
   site-wide default image, so a link shared on social media shows a different picture unless you
   set one.
 - **Permalink structure:** look at the URLs in `post-sitemap.xml`. Posts at the root
-  (`/%postname%/`) or dated (`/2024/05/name/`) need one redirect each to `news/<slug>`; plan it.
-  Custom post types usually keep their path (`/foundations/<slug>/`) – give the template page the
-  same prefix so no redirect is needed.
+  (`/%postname%/`) keep their URLs with a **bare `:slug` template page**: `page_create` with
+  `content` makes `<collection>/:slug`, then `page_edit({ slug: ":slug", redirect: false })`.
+  Dated posts (`/2024/05/name/`) need one redirect each. Custom post types usually keep their path
+  (`/foundations/<slug>/`) – give the template page the same prefix. Flipsite slugs have only
+  `a-z 0-9 -`: a CPT like `van_sales` becomes `vansales/:slug` (`slugsAdjusted`), and emoji slugs
+  (`…-%f0%9f%8c%bf/`) lose the emoji – add a redirect from each old address.
+- **Dead internal links:** old posts link to pages that no longer exist (`/local-tours/`). `curl`
+  every internal link target once; point dead ones to the closest current page instead of
+  copying a 404. Strip newsletter/ad tracking wrappers (`r20.rs6.net`, `eot.…/f/a/…`, `fbclid`)
+  to the plain target URL.
 - **Plugin widgets** – flag as out of scope: `instagram-feed` and `feeds-for-youtube` (placeholder
   images under `wp-content/plugins/<plugin>/img/placeholder.png`; their alt texts and descriptions
   are feed content such as captions and full song lyrics – don't copy them as page text), contact
   form plugins (check every page in scope, the form is often only on Contact), Typekit/Adobe fonts
   (`use.typekit.net`, not on Google Fonts – pick the closest Google font and say so).
+- **Booking engines and payment portals** (CampManager, Booking.com, WebHotelier, Beds24): keep
+  them as buttons to their URL (`url-blank`); an embedded availability widget becomes a "Check
+  availability" strip with that button.
+
+### Page builders (Divi, Elementor, WPBakery)
+
+Page-builder sites return their **shortcodes** (`[et_pb_section …]`, `[vc_row]`) or nothing in
+REST `content.rendered`: always scrape the rendered HTML of every page, CPT item and post, and
+parse it with BeautifulSoup (`uv run --with beautifulsoup4 python script.py`), one record per
+module, not with regexes.
+- **Divi:** modules are `.et_pb_module.et_pb_<type>` (text, image, button, slider/slide, toggle,
+  blurb, code, divider, fullwidth_code) inside `.et_pb_section_N` / `.et_pb_row_N`. Texts are in
+  `.et_pb_text_inner`, toggles in `.et_pb_toggle_title`/`_content`, slides in `.et_pb_slide_title`,
+  `_content` and `.et_pb_more_button`. Theme Builder layouts wrap the page in
+  `<header class="et-l et-l--header">`, `.et-l--post` (the content) and
+  `<footer class="et-l et-l--footer">` – cut at the `<footer` **tag**: the string `et-l--footer`
+  also occurs earlier, in the inline CSS. Pages without the `et-l--post` wrapper (CPT items) need
+  `#main-content` instead, and still contain header and footer images: filter out the logo and
+  footer badges.
+- **Elementor:** widgets are `.elementor-widget-<type>` with `.elementor-widget-container`;
+  sections/containers are `.elementor-section` / `.e-con`. WPBakery: `.vc_row`, `.wpb_wrapper`.
+- **Backgrounds live in CSS, not in `<img>`:** section, slide and hero backgrounds are
+  `background-image:url(…)` in inline `<style>` blocks (`.et_pb_section_3{…}`, `.et_pb_slide_1{…}`,
+  `.elementor-element-ab12cd{…}`). Collect them per page – they are the page-header photos.
+- **What has no equivalent** (say so in the report): video backgrounds (also over the 10 MB import
+  limit – use a still from the same place), shape dividers (waves), multi-slide hero sliders (use
+  the first slide in a hero; the other slides' links usually exist elsewhere on the page), icon
+  fonts (`data-icon`, ETmodules – use bootstrap icons or the uploaded PNG/SVG icons), parallax.
+- **Repeated blocks** that the builder pastes into many pages ("Opening & Closing Dates",
+  "Further information" with phone/email/contact form) – build them once and copy them with
+  `section_create({ duplicate: "<section id>", pageId })` instead of creating each from the library.
+- **Menus** are independent of the URL structure in WordPress (dropdown parents are often only
+  labels), but Flipsite dropdowns list the pages nested under a parent slug. Keep the original flat
+  URLs and use a flat menu of the main pages (`_options.pages`), with the rest in footer columns;
+  don't move pages to nested slugs just to get a dropdown.
 
 ### Multilingual sites (Polylang, WPML)
 
@@ -211,6 +253,16 @@ Work in this order:
    There is no sample for rooms/accommodation: make one (`image`, `heading`, `slug`, `beds`,
    `description`, `body` richtext with features and policies, `gallery`, `published`) and list it
    with `news-cards` (remove the date paragraph and the `sortBy: date` of its repeat).
+   Samples that need changing for existing content: `events` requires `date` (make it optional
+   with `cms_field_edit` when the source lists events without dates, and hide the date badge of
+   `events-list` with a render filter `date notEmpty`, remove its `{starts}–{ends}` row and add a
+   link to `{slugUrl}`); the `faq` answer is plain text (change it to `richtext` for answers with
+   lists and links); `for-sale` has no `slug`, `body`, `gallery` or pages (add them, a template page,
+   and a "View" link to `{slugUrl}` in `product-for-sale`). Features or amenities shown per page
+   (facilities of the vans, of the pods…) go in **one** collection with a `group` enum field, each
+   list filtered with `_options: { filterField: "group", filterType: "or", filter: ["vans"] }`.
+   Cards that link to pages (the "stay with us" cards of a home page) are a small collection from
+   the `services` sample (its `page` field links each card).
    `cms_items_create` answers with every item in full: create big batches once and don't repeat.
    Converting WordPress post HTML to rich text blocks – write a small script (scratchpad) and then
    clean up these artefacts before creating items:
@@ -285,6 +337,19 @@ out and list it.
   the original uses uppercase headings.
 - **Lazy images:** background images can look missing in a screenshot taken right after load –
   wait ~2 s and scroll before concluding an image is broken.
+- **PNG/JPG logos render nothing:** navigation, footer and `trust-logos` sections set
+  `image.inlineSvg: true`; with a raster logo the header is empty and `page_check` says ok. Set
+  `inlineSvg: false` on every logo image that isn't an SVG (`navigation…container.image`,
+  `footer…image`, the `trust-logos` repeat), and give partner logos a real height (default 32 px).
+- **Sample collections come back:** `cta-contact`, `contact-map` and `footer-columns` reference
+  `opening-hours` (and `contact-map` a sample `contact` collection with Finnish data). Deleting the
+  collection while a section still lists `{opening-hours.1.hours}` makes the next section add it
+  again: delete those `ul` lists first, then the collection, and edit the `contact` items.
+- **Icons as images:** `service-icon-grid` shows `{icon}` (an icon library path). With uploaded
+  PNG/SVG icons, replace its icon component by an `image` `{image}` and style it (`width`/`height`
+  96px, `object-fit: contain`); white icons need a `background-color` (the original's colour).
+- **Hanging calls:** besides `section_library_list({ category })`, `component_get` of a deep
+  container can hang until the client aborts (300 s); read the whole section instead.
 
 ## Step 7 – Test and tweak
 
@@ -293,9 +358,10 @@ out and list it.
    page in the preview and in the original, and compare `og:image`, `og:title` and
    `og:description` (`grep -oiE '<meta[^>]*og:[^>]*>'`).
 2. Compare each page with the original (Chrome tools screenshots if available, otherwise open both
-   and ask the user): hierarchy, images, spacing, colours, menu, mobile width. The Chrome tool's
-   `resize_window` doesn't change the viewport (it stays ~500 px, the mobile layout): ask the user
-   to look at the desktop width, mainly the menu.
+   and ask the user): hierarchy, images, spacing, colours, menu, mobile width. In Claude in Chrome
+   the viewport is the size of the user's Chrome window (`resize_window` doesn't change it): if it
+   is ~500 px you see only the mobile layout – ask the user to widen the window or check the
+   desktop menu themselves.
    Multilingual: `curl` the home page and one page of each kind in every language and grep the
    text for English leftovers ("Read more", "All rights reserved", "Closed") and for single-language
    items showing up in other languages; their address in another language must be a 404.

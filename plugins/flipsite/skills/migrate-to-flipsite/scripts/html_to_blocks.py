@@ -17,6 +17,16 @@ from html.parser import HTMLParser
 BLOCK = {'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', 'div', 'td', 'th', 'blockquote'}
 
 
+def _tidy(text):
+    """Markdown that renders: no spaces inside **bold** or *italic* markers, no empty markers."""
+    text = re.sub(r'\*\*\s*\*\*', '', text)
+    text = re.sub(r'(?<!\*)\*\s+\*(?!\*)', ' ', text)
+    text = re.sub(r'\*\*(\s*)(.+?)(\s*)\*\*', lambda m: m.group(1) + ('**' + m.group(2) + '**' if m.group(2).strip() else m.group(2)) + m.group(3), text)
+    text = re.sub(r'(?<![*\w])\*(?!\*)(\s*)([^*]+?)(\s*)(?<!\*)\*(?![*\w])', lambda m: m.group(1) + '*' + m.group(2) + '*' + m.group(3), text)
+    text = re.sub(r'\]\(([^)]+)\)(?=\w)', r'](\1) ', text)
+    return re.sub(r'\s+', ' ', text).strip()
+
+
 class _Parser(HTMLParser):
     def __init__(self):
         super().__init__(convert_charrefs=True)
@@ -25,7 +35,7 @@ class _Parser(HTMLParser):
 
     def flush(self):
         text = re.sub(r'\s+', ' ', self.buf.replace('\xa0', ' ')).strip()
-        text = re.sub(r'\*\*\s*\*\*', '', text).strip()
+        text = _tidy(text)
         self.buf = ''
         imgs, self.imgs = self.imgs, []
         if text and text not in ('**', '*', '[', ']'):
