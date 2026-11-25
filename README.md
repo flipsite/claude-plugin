@@ -16,8 +16,8 @@ Ask Claude in your own words:
 ## What you get
 
 - **Speed.** Static pages with responsive, optimised images and only the CSS the site uses. No
-  theme, plugin or page-builder code is left on the page. On a real three-language hotel site the
-  mobile PageSpeed score went from **64 to 89** (Accessibility 78 → 96, Best Practices 92 → 100).
+  theme, plugin or page-builder code is left on the page. On average, the mobile PageSpeed score
+  of the sites moved so far went from **60+ to 90+**.
 - **SEO kept and improved.** The original URLs in every language, redirects for the addresses
   that change, a title and meta description per page and language, alt texts for every image,
   share images for social media, `hreflang` links and a sitemap.
