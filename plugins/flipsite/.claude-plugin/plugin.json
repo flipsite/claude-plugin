@@ -1,0 +1,30 @@
+{
+  "name": "flipsite",
+  "version": "0.2.0",
+  "description": "Make a slow WordPress (or any) website fast, SEO-friendly and easy to manage: /migrate-to-flipsite rebuilds it on Flipsite with high PageSpeed/Lighthouse scores, content in a CMS separate from layout and theme, every language and URL kept, and a before/after PageSpeed report. Also connects the Flipsite MCP server so Claude can build and edit Flipsite sites.",
+  "author": {
+    "name": "Flipsite"
+  },
+  "homepage": "https://flipsite.io",
+  "keywords": [
+    "wordpress",
+    "website",
+    "seo",
+    "pagespeed",
+    "lighthouse",
+    "core-web-vitals",
+    "performance",
+    "site-speed",
+    "cms",
+    "headless-cms",
+    "content-management",
+    "static-site",
+    "website-builder",
+    "multilingual",
+    "migration",
+    "redirects",
+    "flipsite"
+  ],
+  "license": "MIT",
+  "privacyPolicyUrl": "https://flipsite.io/privacy/"
+}

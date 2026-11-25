@@ -1,0 +1,37 @@
+{
+  "name": "flipsite",
+  "owner": {
+    "name": "Flipsite"
+  },
+  "metadata": {
+    "description": "Make websites faster, better for SEO and easier to manage with Flipsite – including moving WordPress sites over."
+  },
+  "plugins": [
+    {
+      "name": "flipsite",
+      "source": "./plugins/flipsite",
+      "description": "Make a slow WordPress (or any) website fast, SEO-friendly and easy to manage: /migrate-to-flipsite rebuilds it on Flipsite with high PageSpeed/Lighthouse scores, content in a CMS separate from layout and theme, every language and URL kept, and a before/after PageSpeed report. Also connects the Flipsite MCP server so Claude can build and edit Flipsite sites.",
+      "version": "0.2.0",
+      "category": "productivity",
+      "keywords": [
+        "wordpress",
+        "website",
+        "seo",
+        "pagespeed",
+        "lighthouse",
+        "core-web-vitals",
+        "performance",
+        "site-speed",
+        "cms",
+        "headless-cms",
+        "content-management",
+        "static-site",
+        "website-builder",
+        "multilingual",
+        "migration",
+        "redirects",
+        "flipsite"
+      ]
+    }
+  ]
+}
