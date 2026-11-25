@@ -9,6 +9,9 @@ argument-hint: <site-url> [page limit]
 Input: the URL of the site to migrate (`$ARGUMENTS`). If none was given, ask for it.
 Keep the user posted with one short line per step ("Step 3/9: measuring PageSpeed…").
 
+"Open <url>" in this file means in the user's default browser: `open <url>` on macOS,
+`xdg-open <url>` on Linux, `start "" <url>` on Windows. If none works, print the link instead.
+
 ## Step 0 – When the user asked for speed, SEO or a CMS, not for Flipsite
 
 Many people reach this skill with a goal, not a tool: "my WordPress site is slow", "improve our
@@ -43,7 +46,7 @@ short names (`sites_list`, `site_create`…).
 2. If it succeeds: tell the user it's connected and which account/sites it sees. Continue.
 3. If it fails because the user isn't signed in (or the tools are missing):
    - If they don't have an account yet, they can create a free one at
-     https://editor.flipsite.io/auth/signup (open it with `open https://editor.flipsite.io/auth/signup`).
+     https://editor.flipsite.io/auth/signup (open it for them).
    - Ask them to run `/mcp`, pick **flipsite** and sign in (restart Claude Code if it isn't listed;
      as a last resort it can be added by hand with
      `claude mcp add --transport http -s user flipsite https://mcp.flipsite.io`).
@@ -51,7 +54,7 @@ short names (`sites_list`, `site_create`…).
 
 ## Step 2 – Open the original site
 
-Run `open <url>` so it opens in the user's default browser.
+Open `<url>` in the user's default browser.
 
 ## Step 3 – Static analysis of the sitemap
 
@@ -149,12 +152,18 @@ Present a short summary table.
 Ask the user to confirm the scope with AskUserQuestion (recommended option first). With 20 pages or
 fewer, migrate everything and just say so.
 
+**Plan limits:** Flipsite's free plan has one language, 100 CMS items and 50 MB of files per site
+(https://flipsite.io/pricing/; paid plans have 6 languages and 1,000 items). When the scope needs
+more (a multilingual site, hundreds of posts, a large image library), say so in the scope question
+instead of finding out halfway through the build.
+
 ## Step 4 – PageSpeed of the original
 
-Open `https://pagespeed.web.dev/analysis?url=<url-encoded site url>` with `open`.
-If `PAGESPEED_API_KEY` is set, also fetch the numbers:
-`https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=<url>&strategy=mobile&category=performance&category=accessibility&category=best-practices&category=seo&key=$PAGESPEED_API_KEY`
-(without a key the shared quota is usually used up). If Chrome tools are available, open
+Open `https://pagespeed.web.dev/analysis?url=<url-encoded site url>`.
+You can try to fetch the numbers from
+`https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=<url>&strategy=mobile&category=performance&category=accessibility&category=best-practices&category=seo`
+(without a key the shared quota is often used up; don't read API keys from the user's
+environment). If Chrome tools are available, open
 `https://pagespeed.web.dev/analysis?url=<url>&form_factor=mobile` in a tab, wait ~50 s and take a
 screenshot (`get_page_text` returns the report's CSS, not the scores). Otherwise ask the user to read the four scores (mobile) off
 the page. Keep them for the final comparison.
@@ -298,11 +307,11 @@ out and list it.
 ## Step 8 – Open the preview
 
 Get the `previewUrl` from `sites_list`/`site_get` (`https://app.flipsite.io/preview/<siteId>`) and
-open it with `open`.
+open it.
 
 ## Step 9 – PageSpeed of the preview
 
-Open `https://pagespeed.web.dev/analysis?url=<url-encoded preview url>` with `open`. If the preview
+Open `https://pagespeed.web.dev/analysis?url=<url-encoded preview url>`. If the preview
 can't be measured (login wall, PageSpeed errors), say so and offer to publish to a Flipsite
 subdomain – **ask before publishing**, since the content belongs to the original owner.
 
