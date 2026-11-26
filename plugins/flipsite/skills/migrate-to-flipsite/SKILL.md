@@ -444,9 +444,8 @@ Work in this order:
    - drop leftover `###`, `DOWNLOAD` and similar button labels;
    - write descriptions of ≤160 characters cut at a sentence, not the raw excerpt.
 4. **Pages** – `page_create` per page in scope with the original slug, title and meta description.
-   Set `share` (`page_edit`) to the imported asset of the page's original `og:image`. On every CMS
-   template page (`news/:slug`, …) set `share: "{page.image}"`, otherwise every post shares the
-   site's default image instead of its own. *(Flipsite gap – remove when fixed)*
+   Set `share` (`page_edit`) to the imported asset of the page's original `og:image`, except on CMS
+   template pages (`news/:slug`, …): they already share each item's own image (`{page.image}`).
    **Same layout on every page** (the typical theme site: a photo banner, an intro heading, two
    text columns): build the home page first, compare it with the probe, then reuse it instead of
    building each page from the library –
