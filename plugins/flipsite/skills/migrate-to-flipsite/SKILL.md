@@ -126,7 +126,9 @@ Detect and report:
 - **Plugin widgets** – flag as out of scope: `instagram-feed` and `feeds-for-youtube` (placeholder
   images under `wp-content/plugins/<plugin>/img/placeholder.png`; their alt texts and descriptions
   are feed content such as captions and full song lyrics – don't copy them as page text), contact
-  form plugins (check every page in scope, the form is often only on Contact), Typekit/Adobe fonts
+  form plugins (check every page in scope, the form is often only on Contact), cookie consent
+  banners (Complianz `cmplz-`, Borlabs, Cookiebot, CookieYes: Flipsite has no consent component
+  yet, flipsite/editor#176 – say so; a site without tracking doesn't need one), Typekit/Adobe fonts
   (`use.typekit.net`, not on Google Fonts – pick the closest Google font and say so). A
   `font-family` with no `@font-face` and no Google Fonts link (removed for GDPR) never loads:
   visitors see the browser's fallback (Times for a serif). Use the font the page actually shows
