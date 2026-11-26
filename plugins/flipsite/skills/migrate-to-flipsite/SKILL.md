@@ -1,13 +1,14 @@
 ---
 name: migrate-to-flipsite
-description: Make a slow or hard-to-manage website (typically WordPress) fast, SEO-friendly and easy to edit by rebuilding it on Flipsite - static pages that score high on PageSpeed/Lighthouse and Core Web Vitals, content in CMS collections (posts, rooms, team, products) separate from reusable page sections and one theme, every language with its original URLs, and redirects that keep search rankings. Measures PageSpeed before and after, analyses the sitemap, builds pages, menu, images and CMS items, verifies them and opens the preview. Use when the user wants to speed up a WordPress site, improve its SEO or Lighthouse/PageSpeed score, fix Core Web Vitals, get rid of heavy themes, plugins or page builders, separate content from layout, manage content in a CMS, rebuild or migrate a website, says "migrate <site> to Flipsite", or runs /migrate-to-flipsite <url>.
+description: Make a slow or hard-to-manage website (typically WordPress) fast, SEO-friendly and easy to edit by rebuilding it on Flipsite - static pages that score high on PageSpeed/Lighthouse and Core Web Vitals, content in CMS collections (posts, rooms, team, products) separate from reusable page sections and one theme, every language with its original URLs, and redirects that keep search rankings. Analyses the sitemap, builds pages, menu, images and CMS items, verifies them against the original and opens the preview, with an optional PageSpeed comparison of the original and the result at the end. Use when the user wants to speed up a WordPress site, improve its SEO or Lighthouse/PageSpeed score, fix Core Web Vitals, get rid of heavy themes, plugins or page builders, separate content from layout, manage content in a CMS, rebuild or migrate a website, says "migrate <site> to Flipsite", or runs /migrate-to-flipsite <url>.
 argument-hint: <site-url> [page limit]
 ---
 
 # Make a website faster, better for SEO and easier to manage – by moving it to Flipsite
 
 Input: the URL of the site to migrate (`$ARGUMENTS`). If none was given, ask for it.
-Keep the user posted with one short line per step ("Step 3/9: measuring PageSpeed…").
+Keep the user posted with one short line per step ("Step 5/8: building the pages…"). Get to a
+working preview first: the speed test is an optional last step, not a prerequisite.
 
 "Open <url>" in this file means in the user's default browser: `open <url>` on macOS,
 `xdg-open <url>` on Linux, `start "" <url>` on Windows. If none works, print the link instead.
@@ -17,9 +18,10 @@ Keep the user posted with one short line per step ("Step 3/9: measuring PageSpee
 Many people reach this skill with a goal, not a tool: "my WordPress site is slow", "improve our
 SEO", "we score 40 on Lighthouse", "I want to edit the texts without breaking the layout". Then:
 
-1. Measure first (Step 4, PageSpeed mobile of the home page) and read what drags the score down:
-   render-blocking CSS/JS of the theme and plugins, page-builder markup, unoptimised images, slow
-   server response, missing titles, descriptions or alt texts.
+1. Don't run a speed test now. From a quick look at the site (Step 3) name what usually drags a
+   score down there: render-blocking CSS/JS of the theme and plugins, page-builder markup,
+   unoptimised images, missing titles, descriptions or alt texts. Offer to measure the original
+   and the rebuilt site side by side at the end (Step 8).
 2. Explain in a few lines what this skill does about it: it rebuilds the site on **Flipsite**, a
    separate website service (a free account is needed), as static pages with optimised
    responsive images and only the CSS the site uses; content goes into CMS collections and a
@@ -249,18 +251,7 @@ fewer, migrate everything and just say so.
 more (a multilingual site, hundreds of posts, a large image library), say so in the scope question
 instead of finding out halfway through the build.
 
-## Step 4 – PageSpeed of the original
-
-Open `https://pagespeed.web.dev/analysis?url=<url-encoded site url>`.
-You can try to fetch the numbers from
-`https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=<url>&strategy=mobile&category=performance&category=accessibility&category=best-practices&category=seo`
-(without a key the shared quota is often used up; don't read API keys from the user's
-environment). If Chrome tools are available, open
-`https://pagespeed.web.dev/analysis?url=<url>&form_factor=mobile` in a tab, wait ~50 s and take a
-screenshot (`get_page_text` returns the report's CSS, not the scores). Otherwise ask the user to read the four scores (mobile) off
-the page. Keep them for the final comparison.
-
-## Step 5 – Create the Flipsite project
+## Step 4 – Create the Flipsite project
 
 1. Read the Flipsite skills first: `flipsite_skill_get` with `start`, then each skill the tools you
    use name (sections, cms, assets, theme, pages…). Follow them – they beat this file on details.
@@ -269,7 +260,7 @@ the page. Keep them for the final comparison.
 3. `version_create` right away ("Empty site") so every later step can be reverted.
 4. Record in the site's instructions (`site_ai_edit`) where it was migrated from and the agreed scope.
 
-## Step 6 – Migrate
+## Step 5 – Migrate
 
 Work in this order:
 1. **Theme** – take colours (CSS variables, buttons, links, header background) and fonts
@@ -427,7 +418,7 @@ out and list it.
 - **Hanging calls:** besides `section_library_list({ category })`, `component_get` of a deep
   container can hang until the client aborts (300 s); read the whole section instead.
 
-## Step 7 – Test and tweak
+## Step 6 – Test and tweak
 
 1. `page_check` on every page and `site_check`; fix everything they report.
    Neither checks share data: `curl` the home page, one normal page and one item of each template
@@ -477,22 +468,35 @@ out and list it.
    – move it there.
 4. `version_create` ("Migrated – <scope>").
 
-## Step 8 – Open the preview
+## Step 7 – Open the preview
 
 Get the `previewUrl` from `sites_list`/`site_get` (`https://app.flipsite.io/preview/<siteId>`) and
 open it.
 
-## Step 9 – PageSpeed of the preview
+## Step 8 – Optional: PageSpeed of the original and the result
 
-Open `https://pagespeed.web.dev/analysis?url=<url-encoded preview url>`. If the preview
-can't be measured (login wall, PageSpeed errors), say so and offer to publish to a Flipsite
-subdomain – **ask before publishing**, since the content belongs to the original owner.
+Only when the user wants it (ask once at the end, or when they asked about speed or SEO): measure
+both sites the same way, mobile, and compare.
+
+1. Run `https://pagespeed.web.dev/analysis?url=<url-encoded url>&form_factor=mobile` for the
+   original home page and for the preview (`https://app.flipsite.io/preview/<siteId>`). Open both;
+   the numbers can also come from
+   `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=<url>&strategy=mobile&category=performance&category=accessibility&category=best-practices&category=seo`
+   (without a key the shared quota is often used up; don't read API keys from the user's
+   environment). With Chrome tools, wait ~50 s and take a screenshot (`get_page_text` returns the
+   report's CSS, not the scores). Otherwise ask the user to read the four scores off the pages.
+2. **Note on SEO:** a Flipsite preview is hidden from search engines (`noindex`), so its SEO score
+   is always low and only becomes comparable once the site is published. Say this next to the
+   table; compare Performance, Accessibility and Best Practices.
+3. If the preview can't be measured (login wall, PageSpeed errors), say so and offer to publish to
+   a Flipsite subdomain – **ask before publishing**, since the content belongs to the original owner.
 
 ## Finish
 
 Report briefly, in terms of what the user wanted (speed, SEO, easier editing):
-- PageSpeed before/after as a table (mobile: Performance, Accessibility, Best Practices, SEO). The
-  preview is noindex, so its SEO score only becomes comparable once it is published;
+- if Step 8 was run: PageSpeed before/after as a table (mobile: Performance, Accessibility, Best
+  Practices, SEO), with the note that the preview's SEO score only counts once it is published;
+  if not, offer it in one line;
 - where the content now lives (which CMS collections, which parts are sections and theme) and how
   it is edited (the Flipsite editor, or Claude through the MCP);
 - what was migrated (pages, CMS collections + item counts, images, menu items, redirects);

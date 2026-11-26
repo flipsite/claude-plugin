@@ -1,7 +1,7 @@
 # Make your WordPress site faster, better for SEO and easier to manage
 
 A Claude Code plugin that rebuilds an existing website, usually WordPress, on
-[Flipsite](https://flipsite.io), and shows you the PageSpeed (Lighthouse) score before and after.
+[Flipsite](https://flipsite.io), and can show you the PageSpeed (Lighthouse) score of the original and the result side by side.
 
 Ask Claude in your own words:
 
@@ -25,7 +25,7 @@ Ask Claude in your own words:
   Claude.
 - **All languages.** Polylang and WPML sites are moved with every translation and its URL.
 - **A report.** What was moved, what wasn't (shops, member areas, booking engines, plugin widgets)
-  and the PageSpeed comparison, with the preview open next to the original.
+  and, if you want it, the PageSpeed comparison, with the preview open next to the original.
 
 The original site is never changed, and nothing is published or connected to a domain until you
 say so.
@@ -54,15 +54,16 @@ If you already added the Flipsite MCP server by hand (`claude mcp add … flipsi
 
 ## How it works
 
-1. **Measure:** the PageSpeed (Lighthouse) score of the current site, and what slows it down. If
-   you asked about speed or SEO without mentioning Flipsite, Claude explains the option first and
-   asks before rebuilding anything. It can also just give you tips for WordPress.
-2. **Analyse:** sitemap, pages, posts, custom post types, languages, menu, images, forms and
+1. **Analyse:** sitemap, pages, posts, custom post types, languages, menu, images, forms and
    plugins. For a large site Claude proposes a first scope (main menu + latest posts) and asks.
-3. **Build:** a new Flipsite site with the theme, images, CMS collections, pages from library
+2. **Build:** a new Flipsite site with the theme, images, CMS collections, pages from library
    sections, header and footer, and redirects.
-4. **Check:** every page and every language, links, images, titles and descriptions, share data.
-5. **Compare:** opens the preview and its PageSpeed report next to the original's.
+3. **Check:** every page and every language, links, images, titles and descriptions, share data.
+4. **Compare (optional):** the PageSpeed (Lighthouse) scores of the original and the result, side by
+   side. A preview is hidden from search engines, so its SEO score only counts once it is published.
+
+If you asked about speed or SEO without mentioning Flipsite, Claude explains the option first and
+asks before rebuilding anything. It can also just give you tips for WordPress.
 
 The plugin also connects the Flipsite MCP server (`https://mcp.flipsite.io`), so after the move you
 can keep asking Claude to edit pages, add CMS items or change the theme.
@@ -103,8 +104,8 @@ Claude Code, Claude, ChatGPT, Cursor and other MCP clients: https://flipsite.io/
 
 The skill fetches the public pages, sitemaps and (for WordPress) the public REST API of the site
 you name, and imports its public images into your Flipsite account through the Flipsite MCP
-server. It opens Google PageSpeed Insights (pagespeed.web.dev) for the original site and the
-preview, which sends those two addresses to Google. Nothing else is sent anywhere.
+server. If you ask for the optional speed test, it opens Google PageSpeed Insights (pagespeed.web.dev)
+for the original site and the preview, which sends those two addresses to Google. Nothing else is sent anywhere.
 Flipsite's privacy policy: https://flipsite.io/privacy/
 
 ## Support
