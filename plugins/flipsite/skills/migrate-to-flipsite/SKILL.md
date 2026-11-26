@@ -141,10 +141,27 @@ module, not with regexes.
 - **Backgrounds live in CSS, not in `<img>`:** section, slide and hero backgrounds are
   `background-image:url(…)` in inline `<style>` blocks (`.et_pb_section_3{…}`, `.et_pb_slide_1{…}`,
   `.elementor-element-ab12cd{…}`). Collect them per page – they are the page-header photos.
-- **What has no equivalent** (say so in the report): video backgrounds (also over the 10 MB import
-  limit – use a still from the same place), shape dividers (waves), multi-slide hero sliders (use
-  the first slide in a hero; the other slides' links usually exist elsewhere on the page), icon
-  fonts (`data-icon`, ETmodules – use bootstrap icons or the uploaded PNG/SVG icons), parallax.
+- **Video backgrounds and shape dividers** can be rebuilt – don't swap them for a still photo:
+  - Video: download it, make it fit the 10 MB limit without sound
+    (`ffmpeg -i in.mp4 -an -vf scale=1600:-2 -c:v libx264 -preset slow -crf 30 -pix_fmt yuv420p
+    -movflags +faststart out.mp4`; a 76 MB 4K clip of 30 s became 7.5 MB), upload it with
+    `assets_upload_url` + `curl -F file=@out.mp4`, then `component_add` a `video` to the section
+    itself (index 0, `_attr` autoplay/muted/playsinline/loop, `controls: false`, `poster`) and style
+    it `position: absolute; top/left 0; width/height 100%; object-fit: cover; z-index 0` (remove its
+    `aspect-ratio`). Give the section `position: relative; overflow: hidden`, appearance dark and
+    the original's height, and the content container `position: relative; z-index: 2`.
+  - Dividers (Divi `et_pb_top/bottom_inside_divider`, Elementor `elementor-shape`): the SVG is
+    base64 in the CSS – decode it, give it `width="1280" height="140"`, `assets_create` it, and add
+    it as an `image` absolutely positioned at the top or bottom (height 100px, `object-fit: fill`,
+    z-index 1).
+  - Replace library panels the original doesn't have (`cta-image-panel` puts the text in a white
+    card): remove the card style, and swap a library heading slot for a plain `heading` when it
+    needs the original's size – slots of library components are styled for every instance.
+  - Compare the original's computed styles (`getComputedStyle` on its heading and button in Chrome)
+    for font size, weight, colours and button padding/radius, and set `shared:button` to them.
+- **What has no equivalent** (say so in the report): multi-slide hero sliders (use the first
+  slide in a hero; the other slides' links usually exist elsewhere on the page), icon fonts
+  (`data-icon`, ETmodules – use bootstrap icons or the uploaded PNG/SVG icons), parallax.
 - **Repeated blocks** that the builder pastes into many pages ("Opening & Closing Dates",
   "Further information" with phone/email/contact form) – build them once and copy them with
   `section_create({ duplicate: "<section id>", pageId })` instead of creating each from the library.
