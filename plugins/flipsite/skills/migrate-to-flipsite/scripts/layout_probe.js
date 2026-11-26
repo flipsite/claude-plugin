@@ -40,8 +40,10 @@
     const name = img && (img.match(/url\("?([^")]+)/) || [])[1];
     const bgImg = name ? (name.startsWith('data:') ? 'svg-data' : name.split('/').pop().slice(0, 30)) : '';
     const video = sec.querySelector('video') ? ' VIDEO' : '';
-    const div = [...sec.querySelectorAll('[class*="divider"],[class*="shape"]')]
-      .some(e => /svg/.test(cs(e).backgroundImage) || e.querySelector('svg')) ? ' DIVIDER' : '';
+    const div = ([...sec.querySelectorAll('[class*="divider"],[class*="shape"]')]
+      .some(e => /svg/.test(cs(e).backgroundImage) || e.querySelector('svg')) ||
+      [...sec.querySelectorAll('img')].some(e => cs(e).position === 'absolute' && /\.svg|svg\+xml/.test(e.currentSrc || e.src)))
+      ? ' DIVIDER' : '';
     const b = sec.querySelector('a.et_pb_button,.elementor-button,.wp-block-button__link,a[class*="btn"],button,a[class*="button"]');
     return `#${i} ${Math.round(sec.getBoundingClientRect().height)}px | bg ${hex(s.backgroundColor)} ${bgImg}${video}${div}` +
       ` | H ${t(sec.querySelector('h1,h2,h3')) || '-'} | P ${t(sec.querySelector('p')) || '-'}` +

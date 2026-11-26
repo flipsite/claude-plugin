@@ -157,7 +157,8 @@ module, not with regexes.
   - Replace library panels the original doesn't have (`cta-image-panel` puts the text in a white
     card): remove the card style, and swap a library heading slot for a plain `heading` when it
     needs the original's size – slots of library components are styled for every instance.
-  - Compare the original's computed styles (`getComputedStyle` on its heading and button in Chrome)
+  - Compare the original's computed styles (`layout_probe.py --styles "<selector>"`, or
+    `getComputedStyle` in Claude in Chrome)
     for font size, weight, colours and button padding/radius, and set `shared:button` to them.
 - **What has no equivalent** (say so in the report): multi-slide hero sliders (use the first
   slide in a hero; the other slides' links usually exist elsewhere on the page), icon fonts
@@ -388,10 +389,20 @@ out and list it.
    Neither checks share data: `curl` the home page, one normal page and one item of each template
    page in the preview and in the original, and compare `og:image`, `og:title` and
    `og:description` (`grep -oiE '<meta[^>]*og:[^>]*>'`).
-2. **Measure, don't eyeball.** With Claude in Chrome, paste `scripts/layout_probe.js` into
-   `javascript_tool` on the original page (desktop width), then on the preview of the same page,
-   and compare the lines section by section (`window.__layout.slice(4, 8).join('\n')` for the next
-   lines). Fix every difference: items per row (`5` vs `3+2`), card look (border/fill/radius/
+2. **Measure, don't eyeball.** Run the layout probe on the original page and on the preview of
+   the same page, and compare the lines section by section. Two ways, the same output:
+   - **Without a browser extension (default, works for everyone):**
+     `uv run --with playwright python scripts/layout_probe.py <original url> <preview url> --out <scratchpad>/probe`
+     – headless Chromium at 1400 px (downloaded once, ~150 MB, the first run does it). It prints
+     one line per section of each page and saves `original.png` / `preview.png` full-page
+     screenshots; `--section "Camping Pitches"` also saves that section of both pages side by side
+     to `Read`, `--styles ".et_pb_button_3"` prints the computed font, colours, padding and
+     border of an element, `--width 390` checks the mobile layout. Without `uv`:
+     `pip install playwright` and `python scripts/layout_probe.py …`.
+   - **With Claude in Chrome:** paste `scripts/layout_probe.js` into `javascript_tool` on each
+     page (desktop width) and read further lines with `window.__layout.slice(4, 8).join('\n')`.
+   If neither works (no network for Chromium), say so and ask the user to compare the pages.
+   Fix every difference: items per row (`5` vs `3+2`), card look (border/fill/radius/
    shadow), alignment of the intro and of the items, heading and paragraph sizes, section
    background colour, VIDEO and DIVIDER layers, button colour/padding/radius. Do this for the home
    page first – it has the most custom layout – and for one page of each kind.
@@ -409,11 +420,11 @@ out and list it.
      `@md`, the columns `@md width: 100%`, move the button after the image, and remove the
      `max-width: prose` of the richtext and the `screen-sm` of the shared heading – library text is
      capped at a reading width, page-builder text usually runs the full row.
-   Then compare each page with the original (Chrome tools screenshots if available, otherwise open both
-   and ask the user): hierarchy, images, spacing, colours, menu, mobile width. In Claude in Chrome
-   the viewport is the size of the user's Chrome window (`resize_window` doesn't change it): if it
-   is ~500 px you see only the mobile layout – ask the user to widen the window or check the
-   desktop menu themselves.
+   Then look at the screenshots of both pages (the probe's PNGs, or Chrome screenshots):
+   hierarchy, images (blurry ones need a larger `image.width` in `component_style_edit`),
+   spacing, colours, menu, and the mobile width (`--width 390`). In Claude in Chrome the viewport
+   is the size of the user's Chrome window (`resize_window` doesn't change it) – the headless
+   probe has no such limit.
    Multilingual: `curl` the home page and one page of each kind in every language and grep the
    text for English leftovers ("Read more", "All rights reserved", "Closed") and for single-language
    items showing up in other languages; their address in another language must be a 404.

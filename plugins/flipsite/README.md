@@ -93,6 +93,10 @@ Claude Code, Claude, ChatGPT, Cursor and other MCP clients: https://flipsite.io/
 - Works best for content sites: companies, hotels and B&Bs, restaurants, associations, portfolios,
   blogs.
 - Made for Claude Code: the skill fetches the site with `curl` and opens pages in your browser.
+- To check that every section looks like the original, the skill measures both sites in a
+  headless Chromium (Playwright, downloaded once, ~150 MB) – no browser extension needed. With
+  Claude in Chrome connected it can use that instead. Python with `uv` (or `pip install
+  playwright`) is needed for it.
 - A preview is hidden from search engines, so its SEO score is only comparable after publishing.
 
 ## What gets sent where
