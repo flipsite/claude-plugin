@@ -58,7 +58,13 @@ def launch(p):
 
 def probe(page, url, name, out, width, section, styles):
     page.set_viewport_size({"width": width, "height": 900})
-    page.goto(url, wait_until="networkidle", timeout=60000)
+    try:
+        page.goto(url, wait_until="networkidle", timeout=25000)
+    except PlaywrightError:
+        # Wix, Squarespace and pages with chat widgets or analytics beacons never go network-idle:
+        # wait for the load event and give scripts a few seconds to render instead.
+        page.goto(url, wait_until="load", timeout=60000)
+        page.wait_for_timeout(4000)
     page.add_style_tag(content=HIDE_CONSENT_CSS)
     # Scroll through the page so lazy images, backgrounds and videos load.
     height = page.evaluate("document.body.scrollHeight")
@@ -75,7 +81,7 @@ def probe(page, url, name, out, width, section, styles):
         # Crop the section out of a full-page shot taken at scroll 0: scrolling to the element would
         # turn sticky headers on (Divi does it with JavaScript) and cover the top of the section.
         box = page.evaluate(
-            """n => { const all = [...document.querySelectorAll('.et_pb_section,.elementor-top-section,.e-con.e-parent,.vc_row:not(.vc_inner),main > section,body > section,.entry-content > .wp-block-group,.entry-content > .wp-block-cover,.entry-content > .wp-block-columns')]
+            """n => { const all = [...document.querySelectorAll('.et_pb_section,.elementor-top-section,.e-con.e-parent,.vc_row:not(.vc_inner),main > section,body > section,.entry-content > .wp-block-group,.entry-content > .wp-block-cover,.entry-content > .wp-block-columns,#PAGES_CONTAINER section:not(section section)')]
                  .filter(e => { const r = e.getBoundingClientRect(); return r.width > 20 && r.height > 20; });
                const s = /^\\d+$/.test(n) ? all[+n]
                  : all.find(e => e.textContent.toLowerCase().includes(n.toLowerCase()));

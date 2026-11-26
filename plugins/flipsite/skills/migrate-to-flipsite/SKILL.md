@@ -268,6 +268,69 @@ module, not with regexes.
 - **Videos** from the site itself (`/video/*.mp4`) import directly when under 10 MB; add a `video`
   component with its `poster`.
 
+### Wix
+
+- **Recognise it:** `static.wixstatic.com`, `parastorage.com`, `wixui-` classes. The sitemap is
+  `/sitemap.xml` → `pages-sitemap.xml` (plus `blog-posts-sitemap.xml`, `store-products-sitemap.xml`
+  when the site has them). Pages are server-rendered: `curl` has the text, but a headless browser
+  never reaches "network idle" (wait for `load` plus a few seconds – `layout_probe.py` does).
+  Sections are `#PAGES_CONTAINER section` (ClassicSection, column strips), header and footer
+  `#SITE_HEADER` / `#SITE_FOOTER`. Classic Wix sites are often **not responsive** – compare the
+  mobile screenshots (`--width 390`) and say that the rebuild fixes it.
+- **Wix apps hide content behind URL parameters**, not pages: the Restaurants **Menus** app shows
+  each menu at `/menu?menu=dinner`, `?menu=wine-list` (the links are in the page, not in the
+  sitemap). Collect every `a[href]` of each page, open each variant in the headless browser and read
+  the app's `data-hook` elements: `menu.name`, `menu.description`, `section.name`,
+  `section.description`, `item.name`, `item.description`, `item.price`, `item.priceVariants`
+  (Small / $60 / Large / $95). Wix cuts price-variant labels at about 40 characters ("Chocolate
+  and Va") in its own data – the live site shows them cut too; complete only the obvious ones and
+  list the rest for the owner. Two items with the same name on different menus (a lunch and a dinner
+  "Veal Capricciosa") are different dishes: key by menu and section, never by name.
+- **Images:** `assets_import` gets **403 Forbidden** from `static.wixstatic.com` (Wix blocks
+  Flipsite's servers, the same URL works from the user's machine) *(Flipsite gap – remove when
+  fixed, flipsite/editor#1577)*. Download the originals with curl (`/media/<id>`, without the
+  `/v1/fill/…` part, is the full upload) and upload each with `assets_upload_url` + `curl -F` – one
+  link per file, ask for all links in one turn and run the uploads in one parallel shell loop.
+- **Wix stock media may not be moved.** Free Wix media is licensed for use on Wix only (Wix's
+  "Free Wix Media Terms of Use"). Media ids with the prefix `11062b_`, and ids without an account
+  prefix (`a6e6b2b0a74f….jpg`), are Wix's library; the site's own uploads have an account prefix
+  (`4a869e_…`, `ba8d3c_…`). Replace stock photos with the owner's own (a restaurant usually has
+  plenty of food photos) and list what was replaced.
+- **Logos** are often inline SVG (`wixui-vector-image`): take the `outerHTML` of the `svg` with
+  Playwright, drop the `<defs><style>` that targets `#comp-…`, and check the result is valid XML
+  (`xml.dom.minidom.parse`) before uploading: Wix's paths carry their own `fill`, and adding a
+  second one makes the file invalid – the upload then answers `success: true` with an empty file
+  that can't be deleted *(Flipsite gap – remove when fixed, flipsite/editor#1977)*. One logo with
+  `fill="currentColor"` (the library shows SVG logos inline) works on a dark header and a light
+  footer.
+
+### Restaurants
+
+- Menus go in the **`menu` sample collection** (`heading`, `description`, `price`, `dietary`,
+  `category`): one collection for all menus, `category` an enum with one option per course
+  (`lunch`, `appetizers`, `pasta`…, `sparkling`, `red-italy`…, `catering-pasta`), the field help
+  saying which menu each belongs to. Prices as written (`$24`); size variants as text
+  (`Small $60 · Medium $100 · Large $140`) and a note on the serving sizes in the section intro.
+  A restaurant easily has 150+ items: check the plan's CMS limit in the scope question.
+- **`pricing-menu` shows two courses** *(Flipsite gap – remove when fixed, flipsite/editor#1979)*:
+  add one section per two courses, set each repeat's `_options.filter` to its category in one
+  `component_edit_many`, and delete the intro container (`<section>`, `{ container: null }`) of the
+  continuation sections so a menu reads as one. A one-course menu: split it by
+  `filterField: "itemId", filterType: "or"` into the two columns and remove the course headings.
+- **Tabs (Lunch / Dinner / Wine list)** become scroll buttons to the menu sections' anchors in the
+  page header (`_action: "scroll"`, `_target: "dinner"`): edit the header's button (set
+  `text.value`, `icon: null`) and `component_add` the others – `component_edit` can't add siblings.
+- **Reservations:** keep OpenTable/Resy/phone as on the original; a Google map is the
+  `contact-overview` section with `iframeSrc: "https://www.google.com/maps?q=<name, address>&output=embed"`.
+  Create the `contact` collection first (`sampleId: "contact"`) and **don't pass the `collection`
+  prop** – it replaces the card container (flipsite/editor#1575) *(Flipsite gap – remove when fixed)*.
+- **Opening hours** go in the `opening-hours` collection; they render in 24-hour format even on a
+  US site *(Flipsite gap – remove when fixed, flipsite/editor#1978)* – say so. Originals often
+  disagree with themselves (the hero says "Tue–Sun 12–9", the footer "Tue–Sat 12–10, Sun 1–9"):
+  keep the more detailed one and ask the owner.
+- `hero-image-overlay` requires a button: use the restaurant's two main actions (menu,
+  reservations) and mention it when the original hero had none.
+
 ### Multilingual sites (Polylang, WPML)
 
 - **Pair the translations** from the `<link rel="alternate" hreflang="xx" href="…">` of each page's

@@ -5,11 +5,11 @@
 //   #i height | bg colour, background image, VIDEO, DIVIDER | H: first heading size/align/colour |
 //   P: first paragraph size/align | B: first button bg/colour/radius/padding |
 //   rows: items per row (5 = one row of five, 3+2 = wrapped) with the item look (border, fill, radius)
-// Works for Divi, Elementor, WPBakery, Gutenberg and Flipsite pages.
+// Works for Divi, Elementor, WPBakery, Gutenberg, Wix and Flipsite pages.
 (() => {
   const SEL = '.et_pb_section,.elementor-top-section,.e-con.e-parent,.vc_row:not(.vc_inner),' +
     'main > section,body > section,.entry-content > .wp-block-group,.entry-content > .wp-block-cover,' +
-    '.entry-content > .wp-block-columns';
+    '.entry-content > .wp-block-columns,#PAGES_CONTAINER section:not(section section)';
   const vis = e => { const r = e.getBoundingClientRect(); return r.width > 20 && r.height > 20; };
   const cs = e => getComputedStyle(e);
   const hex = c => { const m = c.match(/\d+(\.\d+)?/g); if (!m) return c; if (m[3] === '0') return 'none';
