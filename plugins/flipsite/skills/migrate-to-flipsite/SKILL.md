@@ -109,7 +109,7 @@ Detect and report:
   Dated posts (`/2024/05/name/`) need one redirect each. Custom post types usually keep their path
   (`/foundations/<slug>/`) – give the template page the same prefix. Flipsite slugs have only
   `a-z 0-9 -`: a CPT like `van_sales` becomes `vansales/:slug` (`slugsAdjusted`), and emoji slugs
-  (`…-%f0%9f%8c%bf/`) lose the emoji – add a redirect from each old address.
+  (`…-%f0%9f%8c%bf/`) lose the emoji – add a redirect from each old address. *(Flipsite gap – remove when fixed)*
 - **Dead internal links:** old posts link to pages that no longer exist (`/local-tours/`). `curl`
   every internal link target once; point dead ones to the closest current page instead of
   copying a 404. Strip newsletter/ad tracking wrappers (`r20.rs6.net`, `eot.…/f/a/…`, `fbclid`)
@@ -160,7 +160,7 @@ module, not with regexes.
 - **Backgrounds live in CSS, not in `<img>`:** section, slide and hero backgrounds are
   `background-image:url(…)` in inline `<style>` blocks (`.et_pb_section_3{…}`, `.et_pb_slide_1{…}`,
   `.elementor-element-ab12cd{…}`). Collect them per page – they are the page-header photos.
-- **Video backgrounds and shape dividers** can be rebuilt – don't swap them for a still photo:
+- **Video backgrounds and shape dividers** *(Flipsite gap – remove when fixed)* can be rebuilt – don't swap them for a still photo:
   - Video: download it, make it fit the 10 MB limit without sound
     (`ffmpeg -i in.mp4 -an -vf scale=1600:-2 -c:v libx264 -preset slow -crf 30 -pix_fmt yuv420p
     -movflags +faststart out.mp4`; a 76 MB 4K clip of 30 s became 7.5 MB), upload it with
@@ -179,7 +179,7 @@ module, not with regexes.
   - Compare the original's computed styles (`layout_probe.py --styles "<selector>"`, or
     `getComputedStyle` in Claude in Chrome)
     for font size, weight, colours and button padding/radius, and set `shared:button` to them.
-- **Sliders** have no Flipsite component, but users notice when one is missing. Rebuild them
+- **Sliders** *(Flipsite gap – remove when fixed)* have no Flipsite component, but users notice when one is missing. Rebuild them
   with page code (`site_code_edit({ pageId, headEnd/bodyEnd })`) and `_attr.id`s on components:
   - Hero slider (Slider Revolution `rs-slide`, Divi/Elementor sliders): read the slides' images,
     captions and `data-panzoom` (e.g. `d:10000;ss:100;se:110%` = 10 s zoom 100→110%). Add one
@@ -195,7 +195,7 @@ module, not with regexes.
     scrollbar, and a small script that adds prev/next buttons (`aria-label`) and autoplays (paused
     on hover, off with reduced motion). Check it with Playwright: computed `opacity`/`transform`
     over time, and a click on the arrow.
-- **Sticky header** (the menu stays on top when scrolling): there is no setting; give the header's
+- **Sticky header** *(Flipsite gap – remove when fixed)* (the menu stays on top when scrolling): there is no setting; give the header's
   navigation section `position: sticky; top: 0; z-index: 50; background-color` with
   `component_style_edit`. A header that changes when scrolled (smaller logo) needs page code.
 - **What has no equivalent** (say so in the report): icon fonts (`data-icon`, ETmodules – use
@@ -203,7 +203,7 @@ module, not with regexes.
 - **Repeated blocks** that the builder pastes into many pages ("Opening & Closing Dates",
   "Further information" with phone/email/contact form) – build them once and copy them with
   `section_create({ duplicate: "<section id>", pageId })` instead of creating each from the library.
-- **Menus** are independent of the URL structure in WordPress (dropdown parents are often only
+- **Menus** *(Flipsite gap – remove when fixed)* are independent of the URL structure in WordPress (dropdown parents are often only
   labels), but Flipsite dropdowns list the pages nested under a parent slug. Keep the original flat
   URLs and use a flat menu of the main pages (`_options.pages`), with the rest in footer columns;
   don't move pages to nested slugs just to get a dropdown.
@@ -249,7 +249,7 @@ module, not with regexes.
   pages, migrated once with three texts each.
 - **Site languages:** `site_create` takes one `language` (the main one, the one without a URL
   prefix); add the others with `site_edit({ languages })` in a call of its own, before any
-  per-language `title`/`description` (they are checked against the languages already there).
+  per-language `title`/`description` (they are checked against the languages already there). *(Flipsite gap – remove when fixed)*
   Confirm the languages with the user (it is in the scope question).
 - **Keep every language's URL:** `page_create` with the main language's slug, then
   `page_edit({ slug: { en: "en/our-rooms", de: "de/unsere-zimmer" } })` – the default is
@@ -260,11 +260,11 @@ module, not with regexes.
   `body` (the `blog` sample makes only heading/description localizable). A post that exists in one
   language gets a `languages` field (`["el"]`) so it isn't listed or linked in the others.
   Quotes (reviews) stay in their original language: a non-localizable field.
-- **Built-in texts of library sections** ("Read more", screen reader texts, the copyright line,
+- **Built-in texts of library sections** *(Flipsite gap – remove when fixed)* ("Read more", screen reader texts, the copyright line,
   form placeholders, hidden sample descriptions) arrive as `{ el: "<English>", en: "<English>" }`
   without the other languages. After building, `component_get` each section and set them per
   language (`link.text`, `link.sr`, `_attr.placeholder`, the footer's copyright paragraph).
-- **Titles:** Flipsite appends " (In English)" / " (Auf Deutsch)" to the `<title>` of every
+- **Titles:** *(Flipsite gap – remove when fixed)* Flipsite appends " (In English)" / " (Auf Deutsch)" to the `<title>` of every
   non-main language, also to an explicit title – keep titles of those languages ≤ ~45 characters.
   Give template pages a title per language: `{ en: "{page.heading} - Hotel Name", … }`.
 - **Alt texts** are one string per asset: write them in the main language.
@@ -304,7 +304,7 @@ Work in this order:
    the stylesheets and count `#rrggbb` and `font-family`. When `theme_edit` warns that text on a
    colour isn't readable, take the darker colour it suggests (better accessibility than the
    original) – then read the answer again: the suggestion can itself still warn, and setting
-   `primary` without `gray` replaces a gray you set before. Pass `gray` in the same call.
+   `primary` without `gray` replaces a gray you set before. Pass `gray` in the same call. *(Flipsite gap – remove when fixed)*
 2. **Assets** – logo, favicon and the images of the pages in scope. Use `assets_import_many` with
    the original URLs (prefer the full-size file, not `-300x200` WordPress thumbnails). Keep the
    alt texts. Collect the new asset ids per original URL. On WordPress:
@@ -328,18 +328,18 @@ Work in this order:
    body as rich text, category), then `cms_items_create`. Keep the original slugs.
    There is no sample for rooms/accommodation: make one (`image`, `heading`, `slug`, `beds`,
    `description`, `body` richtext with features and policies, `gallery`, `published`) and list it
-   with `news-cards` (remove the date paragraph and the `sortBy: date` of its repeat).
+   with `news-cards` (remove the date paragraph and the `sortBy: date` of its repeat). *(Flipsite gap – remove when fixed)*
    Samples that need changing for existing content: `events` requires `date` (make it optional
    with `cms_field_edit` when the source lists events without dates, and hide the date badge of
    `events-list` with a render filter `date notEmpty`, remove its `{starts}–{ends}` row and add a
    link to `{slugUrl}`); the `faq` answer is plain text (change it to `richtext` for answers with
    lists and links); `for-sale` has no `slug`, `body`, `gallery` or pages (add them, a template page,
-   and a "View" link to `{slugUrl}` in `product-for-sale`). Features or amenities shown per page
+   and a "View" link to `{slugUrl}` in `product-for-sale`). *(Flipsite gap – remove when fixed)* Features or amenities shown per page
    (facilities of the vans, of the pods…) go in **one** collection with a `group` enum field, each
    list filtered with `_options: { filterField: "group", filterType: "or", filter: ["vans"] }`.
    Cards that link to pages (the "stay with us" cards of a home page) are a small collection from
    the `services` sample (its `page` field links each card).
-   `cms_items_create` answers with every item in full: create big batches once and don't repeat.
+   `cms_items_create` answers with every item in full: create big batches once and don't repeat. *(Flipsite gap – remove when fixed)*
    Converting WordPress post HTML to rich text blocks – write a small script (scratchpad) and then
    clean up these artefacts before creating items:
    - lightbox images (`<a href="…jpg"><img></a>`) become empty links `[](…jpg)` – turn them into
@@ -354,7 +354,7 @@ Work in this order:
 4. **Pages** – `page_create` per page in scope with the original slug, title and meta description.
    Set `share` (`page_edit`) to the imported asset of the page's original `og:image`. On every CMS
    template page (`news/:slug`, …) set `share: "{page.image}"`, otherwise every post shares the
-   site's default image instead of its own.
+   site's default image instead of its own. *(Flipsite gap – remove when fixed)*
    Build each from library sections (`section_library_list`/`section_library_get`) that match the
    original's layout, then fill in the real text and images. Bind list sections and the
    `blog/:slug` (or similar) template page to the CMS collections.
@@ -377,18 +377,22 @@ out and list it.
 
 ### Known Flipsite pitfalls
 
-- **Template pages:** `news-article` (and similar article sections) added to a `<x>/:slug`
+Items marked *(Flipsite gap – remove when fixed)* work around something missing or wrong in
+Flipsite or its MCP server; the rest is lasting migration know-how. When Flipsite fixes a gap,
+delete the marked text instead of keeping both ways.
+
+- **Template pages:** *(Flipsite gap – remove when fixed)* `news-article` (and similar article sections) added to a `<x>/:slug`
   template page arrive bound to the sample `blog` collection (`_dataSource: "blog.1"`, values
   `{image}`, `{body}`, `{date}`), and adding them creates a sample `blog` collection. The page then
   shows sample content (or nothing) even though `page_check` says ok. Fix: set `_dataSource` to
   `null` and rebind to `{page.image}`, `{page.body}`, `{page.date}` (also in `schemaOrg`), remove
   the author/avatar byline if the collection has none, then open an item's preview to confirm.
   Tell the user about the unused `blog` collection instead of deleting it unasked.
-- **Phone buttons:** `header-image`, `hero-logo` and other heroes add a call button bound to
+- **Phone buttons:** *(Flipsite gap – remove when fixed)* `header-image`, `hero-logo` and other heroes add a call button bound to
   `{site.phone}`. Without a phone, `page_check` reports sample data – remove that button (or the
   container holding it) on every such section. With a phone they are fine but not on the original:
   remove them in one `component_edit_many` (`{ componentId: "<header>.container", props: { container: null } }`).
-- **Contact form fields:** `contact-form` has first name, last name, email, phone and message.
+- **Contact form fields:** *(Flipsite gap – remove when fixed)* `contact-form` has first name, last name, email, phone and message.
   Rename labels **and** `_attr.name`/`id`/`for` to match the original form, and delete fields it
   didn't have. Its message `textarea` has `name: "name"` (the same as the name field): set it to
   `message`. Its phone placeholder is a Finnish number; replace it per language. A consent
@@ -397,34 +401,33 @@ out and list it.
   The fields are children of `form.container:N`, read the paths with `component_get`.
 - **Testimonials without photos or ratings:** `trust-testimonials` shows stars (`{rating}`) and a
   photo; remove `icons`, `sr` and `image` when the source reviews have none.
-- **Footer samples:** `footer-columns` adds sample `opening-hours` and `social` collections. Replace
+- **Footer samples:** *(Flipsite gap – remove when fixed)* `footer-columns` adds sample `opening-hours` and `social` collections. Replace
   the column you don't need (a hotel has no opening hours) and delete the unused sample collection
   on a site you just created; edit the social items to the original's profiles.
-- **Breadcrumbs on CMS item pages** show the capitalised slug (`Triklino`), not the item heading:
+- **Breadcrumbs on CMS item pages** *(Flipsite gap – remove when fixed)* show the capitalised slug (`Triklino`), not the item heading:
   remove the breadcrumb from template page headers.
-- **`section_library_list({ category })`** can hang for minutes (`footer`): use `search` instead.
-- **Menu length:** navigation sections show 4 pages by default (`_options.length` of the `nav`).
+- **Menu length:** *(Flipsite gap – remove when fixed)* navigation sections show 4 pages by default (`_options.length` of the `nav`).
   Set it to the original menu's count; Flipsite warns above 5 – keep the original count if that's
   what the site had and mention the warning.
-- **Social collection:** navigation/footer sections add a sample `social` collection with Flipsite
+- **Social collection:** *(Flipsite gap – remove when fixed)* navigation/footer sections add a sample `social` collection with Flipsite
   links – edit its items to the original's profiles (add/rename, e.g. Messenger → X).
-- **Heading weight:** the shared heading style may keep a weight (`500`) the theme font doesn't
+- **Heading weight:** *(Flipsite gap – remove when fixed)* the shared heading style may keep a weight (`500`) the theme font doesn't
   load; set `shared:heading` `font-weight` to the loaded heading weight, plus `text-transform` if
   the original uses uppercase headings.
 - **Lazy images:** background images can look missing in a screenshot taken right after load –
   wait ~2 s and scroll before concluding an image is broken.
-- **PNG/JPG logos render nothing:** navigation, footer and `trust-logos` sections set
+- **PNG/JPG logos render nothing:** *(Flipsite gap – remove when fixed)* navigation, footer and `trust-logos` sections set
   `image.inlineSvg: true`; with a raster logo the header is empty and `page_check` says ok. Set
   `inlineSvg: false` on every logo image that isn't an SVG (`navigation…container.image`,
   `footer…image`, the `trust-logos` repeat), and give partner logos a real height (default 32 px).
-- **Sample collections come back:** `cta-contact`, `contact-map` and `footer-columns` reference
+- **Sample collections come back:** *(Flipsite gap – remove when fixed)* `cta-contact`, `contact-map` and `footer-columns` reference
   `opening-hours` (and `contact-map` a sample `contact` collection with Finnish data). Deleting the
   collection while a section still lists `{opening-hours.1.hours}` makes the next section add it
   again: delete those `ul` lists first, then the collection, and edit the `contact` items.
 - **Icons as images:** `service-icon-grid` shows `{icon}` (an icon library path). With uploaded
   PNG/SVG icons, replace its icon component by an `image` `{image}` and style it (`width`/`height`
   96px, `object-fit: contain`); white icons need a `background-color` (the original's colour).
-- **Library layouts aren't the original's layout.** Card grids are 1/2/3 columns: a row of 4–6
+- **Library layouts aren't the original's layout.** *(Flipsite gap – remove when fixed)* Card grids are 1/2/3 columns: a row of 4–6
   items on the original (Divi `et_pb_column_1_5`, Elementor columns) needs
   `component_style_edit` on the repeat container (`grid-template-columns: repeat(2,…)`,
   `@md repeat(3,…)`, `@lg repeat(5, minmax(0, 1fr))`). The section `alignment` variant aligns the
@@ -432,7 +435,7 @@ out and list it.
   item container `align-items: center; text-align: center`. Outlined boxes are `tiles: none` plus
   `border-width/style/color` and `border-radius: 0` on the item, not the `card` variant. Limit a
   half-width intro with `@lg max-width: 50%` on the section's intro container.
-- **Section intro sizes are shared.** The eyebrow/heading/description of library sections is one
+- **Section intro sizes are shared.** *(Flipsite gap – remove when fixed)* The eyebrow/heading/description of library sections is one
   custom component (`_componentSectionLibrary1`, "Section Header"), heading `heading-lg`,
   description `text-lg`. Page builders usually use smaller section headings (Divi 26px h2, 16px
   text): set them once on `_componentSectionLibrary1.heading` / `.paragraph` (it changes every
@@ -443,23 +446,23 @@ out and list it.
   (`…container`, `…container:1`, `…container:2` each), and components added inside `component_add`
   props don't inherit the shared styles – add `"inherits": ["heading"]` to a heading,
   `["text"]` to a paragraph, `["button"]` to a button and `["richtext"]` to a richtext. An icon in
-  a button needs its own `width`/`height` (16px), or it fills the button on mobile.
+  a button needs its own `width`/`height` (16px), or it fills the button on mobile. *(Flipsite gap – remove when fixed)*
 - **A list in two columns read top to bottom** (01–06 left, 07–11 right): keep the items in order
   and give the repeat container `@md { grid-template-columns: 1fr 1fr; grid-template-rows:
   repeat(<half>, auto); grid-auto-flow: column }`.
-- **Style values are often presets:** `order` (-9999/0/9999), `object-position` (center, top,
+- **Style values are often presets:** *(Flipsite gap – remove when fixed)* `order` (-9999/0/9999), `object-position` (center, top,
   bottom, left, right), `line-height`, `letter-spacing`, `font-family` (headings, body, body-bold,
   mono). The error lists the allowed values; pick the nearest.
-- **Code in text:** CMS text fields and paragraphs drop anything that looks like an HTML tag, also
+- **Code in text:** *(Flipsite gap – remove when fixed)* CMS text fields and paragraphs drop anything that looks like an HTML tag, also
   in backticks (`<script …>` disappears). Show code in a richtext `codeBlock` (a `richtext` CMS
   field keeps the tags). A one-line snippet in a narrow card overflows it: style
   `….richtext.codeBlock` with `overflow: hidden`, `white-space: pre`, `max-width: 100%`, and the
   `richtext` and the card `min-width: 0`.
-- **Extras on some items of a list** (a button on step 1 only, a code box on step 2, a note): add
+- **Extras on some items of a list** *(Flipsite gap – remove when fixed)* (a button on step 1 only, a code box on step 2, a note): add
   optional fields to the collection and the components to the repeated item, and give each one
   `_options.render: { filterField: "<field>", filterType: "notEmpty" }` – a button bound to an
   empty field still renders as an empty coloured box.
-- **Rows under a list** (a "Works with …" line, an "OR" rule, a second call to action): add a
+- **Rows under a list** *(Flipsite gap – remove when fixed)* (a "Works with …" line, an "OR" rule, a second call to action): add a
   container after the list's container with `margin-top` negative to close the section gap.
   `divider`s inside `component_add` props are dropped like empty containers; add them with their
   own `component_add`, and style them as a line (`height: 1px`, `background-color`, `flex-grow: 1`).
@@ -480,13 +483,13 @@ out and list it.
   every section intro, so check the others.
 - **Rows with a date column** (news lists): give the date column a fixed width (`@sm width:
   130px; flex-shrink: 0`), or the titles start at a different x on every row.
-- **Richtext fields in library lists:** `faq-list`/`faq-accordion` bind the answer to a
+- **Richtext fields in library lists:** *(Flipsite gap – remove when fixed)* `faq-list`/`faq-accordion` bind the answer to a
   `paragraph`; after changing the `answer` field to richtext, replace that paragraph by a `richtext`
   component with `{answer}`, or the formatting and links are lost.
 - **Text and card colours of the original:** body text follows the theme's gray scale; set
   `shared:text` and `shared:richtext.p` `color` (and `@dark`) to the original's text colour, and the
   `[style=card]` `background-color` of the card containers to the original's card colour.
-- **Hanging calls** (no answer until the client aborts after 300 s): `section_library_list({ category })`
+- **Hanging calls** *(Flipsite gap – remove when fixed)* (no answer until the client aborts after 300 s): `section_library_list({ category })`
   (use `search`), `component_get` of a deep container (read the whole section) or of a whole
   navigation section (read `navigation.container`), `component_style_get` of `shared:richtext.h`.
   Don't wait for them: carry on with other calls and retry the narrower id.
