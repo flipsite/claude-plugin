@@ -395,6 +395,20 @@ out and list it.
    shadow), alignment of the intro and of the items, heading and paragraph sizes, section
    background colour, VIDEO and DIVIDER layers, button colour/padding/radius. Do this for the home
    page first – it has the most custom layout – and for one page of each kind.
+   Go through **every** line, not only the section you were looking at: each `bg` colour other
+   than white, each `VIDEO` and `DIVIDER` must be rebuilt (users notice the next one right away).
+   - A divider's fill is the colour of the **neighbouring** section (Divi: a white wave on top of a
+     teal section, a `#f2f2f2` wave at its bottom flowing into a grey band). Decode each divider of
+     each section separately – the same shape is often reused with another fill – and give the
+     neighbour section that exact background colour, or the wave shows a seam.
+   - Coloured bands: set `background-color` (also under `@dark`) and `appearance: dark` on the
+     section; padding-block from the original (Divi pads divider sections 150px so the waves don't
+     cover the text).
+   - Two-column library sections (`content-text-image`) vs a one-column original (heading, full
+     width text, full width image, button): set the container `flex-direction: column` also at
+     `@md`, the columns `@md width: 100%`, move the button after the image, and remove the
+     `max-width: prose` of the richtext and the `screen-sm` of the shared heading – library text is
+     capped at a reading width, page-builder text usually runs the full row.
    Then compare each page with the original (Chrome tools screenshots if available, otherwise open both
    and ask the user): hierarchy, images, spacing, colours, menu, mobile width. In Claude in Chrome
    the viewport is the size of the user's Chrome window (`resize_window` doesn't change it): if it
