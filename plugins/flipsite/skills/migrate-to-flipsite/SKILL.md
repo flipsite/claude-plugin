@@ -179,9 +179,27 @@ module, not with regexes.
   - Compare the original's computed styles (`layout_probe.py --styles "<selector>"`, or
     `getComputedStyle` in Claude in Chrome)
     for font size, weight, colours and button padding/radius, and set `shared:button` to them.
-- **What has no equivalent** (say so in the report): multi-slide hero sliders (use the first
-  slide in a hero; the other slides' links usually exist elsewhere on the page), icon fonts
-  (`data-icon`, ETmodules – use bootstrap icons or the uploaded PNG/SVG icons), parallax.
+- **Sliders** have no Flipsite component, but users notice when one is missing. Rebuild them
+  with page code (`site_code_edit({ pageId, headEnd/bodyEnd })`) and `_attr.id`s on components:
+  - Hero slider (Slider Revolution `rs-slide`, Divi/Elementor sliders): read the slides' images,
+    captions and `data-panzoom` (e.g. `d:10000;ss:100;se:110%` = 10 s zoom 100→110%). Add one
+    `image` per slide to the hero section (`position: absolute`, full size, `object-fit: cover`,
+    `loading: eager`, `_attr: { id: "hero-slide-1", "aria-hidden": "true" }`), the hero
+    `position: relative; overflow: hidden`, its content `z-index: 2`. Keep the first caption as
+    the h1 and add the others as paragraphs (`aria-hidden`) in the same container. Then CSS:
+    captions share one grid cell (`grid-area: 1/1`), one `@keyframes` fades each slide in and out
+    (24 s cycle, delays 0/8/16 s, the first with a negative delay so it shows at once), another
+    zooms it, and `@media (prefers-reduced-motion: reduce)` shows only the first slide.
+  - Testimonial/logo slider: give the repeat container an id, `display: flex`, `overflow-x: auto`,
+    items `flex-shrink: 0; width: 100%`; in page code add `scroll-snap-type: x mandatory`, hide the
+    scrollbar, and a small script that adds prev/next buttons (`aria-label`) and autoplays (paused
+    on hover, off with reduced motion). Check it with Playwright: computed `opacity`/`transform`
+    over time, and a click on the arrow.
+- **Sticky header** (the menu stays on top when scrolling): there is no setting; give the header's
+  navigation section `position: sticky; top: 0; z-index: 50; background-color` with
+  `component_style_edit`. A header that changes when scrolled (smaller logo) needs page code.
+- **What has no equivalent** (say so in the report): icon fonts (`data-icon`, ETmodules – use
+  bootstrap icons or the uploaded PNG/SVG icons), parallax.
 - **Repeated blocks** that the builder pastes into many pages ("Opening & Closing Dates",
   "Further information" with phone/email/contact form) – build them once and copy them with
   `section_create({ duplicate: "<section id>", pageId })` instead of creating each from the library.
@@ -456,7 +474,12 @@ out and list it.
   quote paragraph and the caption, styled from the original (size, colour, `font-style`).
 - **Links in section intros** ("See all FAQs →", "See the setup guide →"): write them as a Markdown
   link in the Description slot and style `_componentSectionLibrary1.paragraph.a` once (colour,
-  `font-family: body-bold`, `text-decoration-line: none`).
+  `font-family: body-bold`, `text-decoration-line: none`). When the original puts that link to
+  the right of the heading ("Alle Beiträge →"), set `_componentSectionLibrary1` to
+  `@md { flex-direction: row; justify-content: space-between; align-items: center }` – it changes
+  every section intro, so check the others.
+- **Rows with a date column** (news lists): give the date column a fixed width (`@sm width:
+  130px; flex-shrink: 0`), or the titles start at a different x on every row.
 - **Richtext fields in library lists:** `faq-list`/`faq-accordion` bind the answer to a
   `paragraph`; after changing the `answer` field to richtext, replace that paragraph by a `richtext`
   component with `{answer}`, or the formatting and links are lost.
