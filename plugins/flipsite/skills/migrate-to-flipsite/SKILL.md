@@ -603,12 +603,6 @@ delete the marked text instead of keeping both ways.
 - **Text and card colours of the original:** body text follows the theme's gray scale; set
   `shared:text` and `shared:richtext.p` `color` (and `@dark`) to the original's text colour, and the
   `[style=card]` `background-color` of the card containers to the original's card colour.
-- **Hanging calls** *(Flipsite gap – remove when fixed)* (no answer until the client aborts after 300 s): `section_library_list({ category })`
-  (use `search`), `component_get` of a deep container (read the whole section) or of a whole
-  navigation section (read `navigation.container`), `component_style_get` of `shared:richtext.h`
-  or of a component just added with `component_add`; `section_library_list({ search: "navigation" })`
-  hung once and answered at once on retry. Don't wait for them: carry on with other calls and
-  retry the narrower id, or write the style without reading it first.
 - **Empty sections:** `sectionLibraryId: "empty"` (the string), not `""` – an empty string is
   rejected as missing.
 - **Photo banners as section backgrounds are blurry** *(Flipsite gap – remove when fixed)*: a section
