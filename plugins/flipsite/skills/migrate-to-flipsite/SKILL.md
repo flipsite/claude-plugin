@@ -118,7 +118,16 @@ Detect and report:
   images under `wp-content/plugins/<plugin>/img/placeholder.png`; their alt texts and descriptions
   are feed content such as captions and full song lyrics – don't copy them as page text), contact
   form plugins (check every page in scope, the form is often only on Contact), Typekit/Adobe fonts
-  (`use.typekit.net`, not on Google Fonts – pick the closest Google font and say so).
+  (`use.typekit.net`, not on Google Fonts – pick the closest Google font and say so). A
+  `font-family` with no `@font-face` and no Google Fonts link (removed for GDPR) never loads:
+  visitors see the browser's fallback (Times for a serif). Use the font the page actually shows
+  and say so.
+- **Files** (PDFs of publications, price lists, forms): import them with `assets_import_many` like
+  images (10 MB limit) and link them in rich text by asset id, `[PDF](das-gmbh-recht.pdf)` – it
+  renders as `/files/<id>`. A Markdown link to a page id (`[Alle Beiträge](news)`) renders as that
+  page's URL.
+- **Privacy policy:** it names the old site's tools (Matomo, cookie banners, legal-text widgets,
+  the hosting). Copy it as it is, but tell the user the owner has to update it for the new site.
 - **Booking engines and payment portals** (CampManager, Booking.com, WebHotelier, Beds24): keep
   them as buttons to their URL (`url-blank`); an embedded availability widget becomes a "Check
   availability" strip with that button.
@@ -139,7 +148,15 @@ module, not with regexes.
   `#main-content` instead, and still contain header and footer images: filter out the logo and
   footer badges.
 - **Elementor:** widgets are `.elementor-widget-<type>` with `.elementor-widget-container`;
-  sections/containers are `.elementor-section` / `.e-con`. WPBakery: `.vc_row`, `.wpb_wrapper`.
+  sections/containers are `.elementor-section` / `.e-con`. Theme widgets have the theme's prefix
+  (`data-widget_type="thetrial_core_section_title.default"`, `…_blog_list`, `…_testimonials_list`):
+  list every `[data-widget_type]` of a page with its text first, then map them. REST
+  `content.rendered` holds the same widget HTML, so it works for posts and legal pages too.
+  Section backgrounds are in **separate files**, `/wp-content/uploads/elementor/css/post-<page id>.css`
+  (linked in the `<head>`), not in inline styles: download them and grep
+  `.elementor-element-<id>{…background-image|background-color…}`. Slider Revolution
+  (`rs-module`) keeps slide images in `data-lazyload`.
+  WPBakery: `.vc_row`, `.wpb_wrapper`.
 - **Backgrounds live in CSS, not in `<img>`:** section, slide and hero backgrounds are
   `background-image:url(…)` in inline `<style>` blocks (`.et_pb_section_3{…}`, `.et_pb_slide_1{…}`,
   `.elementor-element-ab12cd{…}`). Collect them per page – they are the page-header photos.
@@ -405,8 +422,16 @@ out and list it.
   `heading` instead of the slot.
 - **Rows of similar items** (four facts, five tiles, three steps, two plans): put them in a small
   CMS collection and a library section that repeats it. Static siblings have to be styled one by one
-  (`…container`, `…container:1`, `…container:2` each), and a `heading` added inside `component_add`
-  props doesn't inherit the shared heading style – add `"inherits": ["heading"]` to its style.
+  (`…container`, `…container:1`, `…container:2` each), and components added inside `component_add`
+  props don't inherit the shared styles – add `"inherits": ["heading"]` to a heading,
+  `["text"]` to a paragraph, `["button"]` to a button and `["richtext"]` to a richtext. An icon in
+  a button needs its own `width`/`height` (16px), or it fills the button on mobile.
+- **A list in two columns read top to bottom** (01–06 left, 07–11 right): keep the items in order
+  and give the repeat container `@md { grid-template-columns: 1fr 1fr; grid-template-rows:
+  repeat(<half>, auto); grid-auto-flow: column }`.
+- **Style values are often presets:** `order` (-9999/0/9999), `object-position` (center, top,
+  bottom, left, right), `line-height`, `letter-spacing`, `font-family` (headings, body, body-bold,
+  mono). The error lists the allowed values; pick the nearest.
 - **Code in text:** CMS text fields and paragraphs drop anything that looks like an HTML tag, also
   in backticks (`<script …>` disappears). Show code in a richtext `codeBlock` (a `richtext` CMS
   field keeps the tags). A one-line snippet in a narrow card overflows it: style
@@ -438,8 +463,10 @@ out and list it.
 - **Text and card colours of the original:** body text follows the theme's gray scale; set
   `shared:text` and `shared:richtext.p` `color` (and `@dark`) to the original's text colour, and the
   `[style=card]` `background-color` of the card containers to the original's card colour.
-- **Hanging calls:** besides `section_library_list({ category })`, `component_get` of a deep
-  container can hang until the client aborts (300 s); read the whole section instead.
+- **Hanging calls** (no answer until the client aborts after 300 s): `section_library_list({ category })`
+  (use `search`), `component_get` of a deep container (read the whole section) or of a whole
+  navigation section (read `navigation.container`), `component_style_get` of `shared:richtext.h`.
+  Don't wait for them: carry on with other calls and retry the narrower id.
 
 ## Step 6 – Test and tweak
 

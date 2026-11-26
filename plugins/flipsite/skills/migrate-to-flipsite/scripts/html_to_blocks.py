@@ -7,7 +7,7 @@ Handles what WordPress content usually has: headings, paragraphs, ul/ol, <strong
 Markdown, links as [text](url), images (also inside lightbox links and floated inside a
 paragraph: they are moved after the paragraph instead of splitting it), YouTube iframes as
 youtube blocks, tables as table blocks (first row as header when it has <th>), <pre> as codeBlock,
-<blockquote> as quote. WordPress image URLs keep their original upload (the -WxH thumbnail suffix
+<blockquote> as quote, <br> inside a paragraph as <br> (addresses keep their lines). WordPress image URLs keep their original upload (the -WxH thumbnail suffix
 is removed); map all image URLs to the imported asset ids before creating items. h1 becomes h2
 (the page has its own h1).
 """
@@ -26,7 +26,10 @@ def _tidy(text):
     text = re.sub(r'\*\*(\s*)(.+?)(\s*)\*\*', lambda m: m.group(1) + ('**' + m.group(2) + '**' if m.group(2).strip() else m.group(2)) + m.group(3), text)
     text = re.sub(r'(?<![*\w])\*(?!\*)(\s*)([^*]+?)(\s*)(?<!\*)\*(?![*\w])', lambda m: m.group(1) + '*' + m.group(2) + '*' + m.group(3), text)
     text = re.sub(r'\]\(([^)]+)\)(?=\w)', r'](\1) ', text)
-    return re.sub(r'\s+', ' ', text).strip()
+    text = re.sub(r'\s+', ' ', text).strip()
+    # <br> inside a paragraph (addresses, contact lines) stays a line break
+    text = re.sub(r'(?:\s*\x01\s*)+', '<br>', text)
+    return re.sub(r'^(?:<br>)+|(?:<br>)+$', '', text).strip()
 
 
 class _Parser(HTMLParser):
@@ -42,6 +45,8 @@ class _Parser(HTMLParser):
             return
         text = re.sub(r'\s+', ' ', self.buf.replace('\xa0', ' ')).strip()
         text = _tidy(text)
+        if self.tag and self.tag[0] == 'h':
+            text = text.replace('<br>', ' ')
         self.buf = ''
         imgs, self.imgs = self.imgs, []
         if text and text not in ('**', '*', '[', ']'):
@@ -100,7 +105,7 @@ class _Parser(HTMLParser):
             self.flush()
             self.tag = t
         elif t == 'br':
-            self.buf += ' '
+            self.buf += ' ' if self.items is not None else '\x01'
         elif t in ('strong', 'b'):
             self.buf += '**'
         elif t in ('em', 'i') and not a.get('class'):
