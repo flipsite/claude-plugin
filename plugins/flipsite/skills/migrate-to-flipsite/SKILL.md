@@ -408,7 +408,30 @@ out and list it.
   (`…container`, `…container:1`, `…container:2` each), and a `heading` added inside `component_add`
   props doesn't inherit the shared heading style – add `"inherits": ["heading"]` to its style.
 - **Code in text:** CMS text fields and paragraphs drop anything that looks like an HTML tag, also
-  in backticks (`<script …>` disappears). Show code in a richtext `codeBlock`.
+  in backticks (`<script …>` disappears). Show code in a richtext `codeBlock` (a `richtext` CMS
+  field keeps the tags). A one-line snippet in a narrow card overflows it: style
+  `….richtext.codeBlock` with `overflow: hidden`, `white-space: pre`, `max-width: 100%`, and the
+  `richtext` and the card `min-width: 0`.
+- **Extras on some items of a list** (a button on step 1 only, a code box on step 2, a note): add
+  optional fields to the collection and the components to the repeated item, and give each one
+  `_options.render: { filterField: "<field>", filterType: "notEmpty" }` – a button bound to an
+  empty field still renders as an empty coloured box.
+- **Rows under a list** (a "Works with …" line, an "OR" rule, a second call to action): add a
+  container after the list's container with `margin-top` negative to close the section gap.
+  `divider`s inside `component_add` props are dropped like empty containers; add them with their
+  own `component_add`, and style them as a line (`height: 1px`, `background-color`, `flex-grow: 1`).
+- **Two columns under one heading:** when the original's heading runs across the full width above
+  both columns, don't use a text+image library section (it puts the heading in one column, 4 lines
+  instead of 2). Build eyebrow+heading (`_componentSectionLibrary1` instance) above a `display:
+  grid` container with the original's column widths (`@lg grid-template-columns: 564fr 580fr`), and
+  when the rows line up across the columns (image | image, quote | text) give the grid one cell per
+  row and column rather than two independent column stacks.
+- **Quote with a portrait:** a richtext `quote` block has no photo. Use a row: a 56 px round
+  `image` (`border-radius: 9999px`, `object-fit: cover`, `flex-shrink: 0`) next to a column with the
+  quote paragraph and the caption, styled from the original (size, colour, `font-style`).
+- **Links in section intros** ("See all FAQs →", "See the setup guide →"): write them as a Markdown
+  link in the Description slot and style `_componentSectionLibrary1.paragraph.a` once (colour,
+  `font-family: body-bold`, `text-decoration-line: none`).
 - **Richtext fields in library lists:** `faq-list`/`faq-accordion` bind the answer to a
   `paragraph`; after changing the `answer` field to richtext, replace that paragraph by a `richtext`
   component with `{answer}`, or the formatting and links are lost.
@@ -455,6 +478,11 @@ out and list it.
      `@md`, the columns `@md width: 100%`, move the button after the image, and remove the
      `max-width: prose` of the richtext and the `screen-sm` of the shared heading – library text is
      capped at a reading width, page-builder text usually runs the full row.
+   - Headings: compare how many lines each takes (`--styles "h2"` gives width × height). A
+     heading in one column of a library layout wraps to 4 lines where the original ran across
+     the page in 2; an original intro capped at e.g. 820 px wraps where the library's doesn't.
+   - Things inside cards: every button, code box, note and photo of the original card must be
+     there (look at the section crops, not only the probe line).
    Then look at the screenshots of both pages (the probe's PNGs, or Chrome screenshots):
    hierarchy, images (blurry ones need a larger `image.width` in `component_style_edit`),
    spacing, colours, menu, and the mobile width (`--width 390`). In Claude in Chrome the viewport
