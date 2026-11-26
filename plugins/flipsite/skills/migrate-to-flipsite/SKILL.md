@@ -365,6 +365,20 @@ out and list it.
 - **Icons as images:** `service-icon-grid` shows `{icon}` (an icon library path). With uploaded
   PNG/SVG icons, replace its icon component by an `image` `{image}` and style it (`width`/`height`
   96px, `object-fit: contain`); white icons need a `background-color` (the original's colour).
+- **Library layouts aren't the original's layout.** Card grids are 1/2/3 columns: a row of 4–6
+  items on the original (Divi `et_pb_column_1_5`, Elementor columns) needs
+  `component_style_edit` on the repeat container (`grid-template-columns: repeat(2,…)`,
+  `@md repeat(3,…)`, `@lg repeat(5, minmax(0, 1fr))`). The section `alignment` variant aligns the
+  intro *and* the items: for a left intro above centred boxes use `alignment: left` and give the
+  item container `align-items: center; text-align: center`. Outlined boxes are `tiles: none` plus
+  `border-width/style/color` and `border-radius: 0` on the item, not the `card` variant. Limit a
+  half-width intro with `@lg max-width: 50%` on the section's intro container.
+- **Section intro sizes are shared.** The eyebrow/heading/description of library sections is one
+  custom component (`_componentSectionLibrary1`, "Section Header"), heading `heading-lg`,
+  description `text-lg`. Page builders usually use smaller section headings (Divi 26px h2, 16px
+  text): set them once on `_componentSectionLibrary1.heading` / `.paragraph` (it changes every
+  section, which is what you want). A section whose heading differs (a 60px banner) gets a plain
+  `heading` instead of the slot.
 - **Hanging calls:** besides `section_library_list({ category })`, `component_get` of a deep
   container can hang until the client aborts (300 s); read the whole section instead.
 
@@ -374,7 +388,14 @@ out and list it.
    Neither checks share data: `curl` the home page, one normal page and one item of each template
    page in the preview and in the original, and compare `og:image`, `og:title` and
    `og:description` (`grep -oiE '<meta[^>]*og:[^>]*>'`).
-2. Compare each page with the original (Chrome tools screenshots if available, otherwise open both
+2. **Measure, don't eyeball.** With Claude in Chrome, paste `scripts/layout_probe.js` into
+   `javascript_tool` on the original page (desktop width), then on the preview of the same page,
+   and compare the lines section by section (`window.__layout.slice(4, 8).join('\n')` for the next
+   lines). Fix every difference: items per row (`5` vs `3+2`), card look (border/fill/radius/
+   shadow), alignment of the intro and of the items, heading and paragraph sizes, section
+   background colour, VIDEO and DIVIDER layers, button colour/padding/radius. Do this for the home
+   page first – it has the most custom layout – and for one page of each kind.
+   Then compare each page with the original (Chrome tools screenshots if available, otherwise open both
    and ask the user): hierarchy, images, spacing, colours, menu, mobile width. In Claude in Chrome
    the viewport is the size of the user's Chrome window (`resize_window` doesn't change it): if it
    is ~500 px you see only the mobile layout – ask the user to widen the window or check the
