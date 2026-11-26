@@ -36,6 +36,15 @@ STYLES_JS = """sel => { const e = document.querySelector(sel); if (!e) return 'n
   return `${Math.round(r.width)}x${Math.round(r.height)} ` + keys.map(k => `${k}: ${c.getPropertyValue(k)}`).join('; '); }"""
 
 
+# Cookie consent banners cover the content of the original's screenshots: hide the common ones
+# (Complianz, Cookiebot, Borlabs, CookieYes, Cookie Notice, GDPR Cookie Compliance, CookieLawInfo,
+# Usercentrics, OneTrust, iubenda, Real Cookie Banner) before measuring.
+HIDE_CONSENT_CSS = """#cmplz-cookiebanner-container, .cmplz-cookiebanner, #CybotCookiebotDialog,
+#BorlabsCookieBox, .cky-consent-container, .cky-overlay, #cookie-notice, #moove_gdpr_cookie_info_bar,
+#cookie-law-info-bar, .cli-modal-backdrop, #usercentrics-root, #onetrust-consent-sdk,
+.iubenda-cs-container, #real-cookie-banner, .rcb-banner { display: none !important; }"""
+
+
 def launch(p):
     try:
         return p.chromium.launch()
@@ -50,6 +59,7 @@ def launch(p):
 def probe(page, url, name, out, width, section, styles):
     page.set_viewport_size({"width": width, "height": 900})
     page.goto(url, wait_until="networkidle", timeout=60000)
+    page.add_style_tag(content=HIDE_CONSENT_CSS)
     # Scroll through the page so lazy images, backgrounds and videos load.
     height = page.evaluate("document.body.scrollHeight")
     for y in range(0, height, 600):

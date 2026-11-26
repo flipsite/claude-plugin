@@ -14,7 +14,15 @@
   const cs = e => getComputedStyle(e);
   const hex = c => { const m = c.match(/\d+(\.\d+)?/g); if (!m) return c; if (m[3] === '0') return 'none';
     return '#' + m.slice(0, 3).map(n => (+n).toString(16).padStart(2, '0')).join(''); };
-  const t = e => e && `${parseInt(cs(e).fontSize)}px ${cs(e).fontWeight} ${cs(e).fontFamily.split(',')[0].replace(/"/g, '')} ` +
+  // The computed font-family is the declared stack, not what rendered: a family that has no loaded
+  // @font-face (a Google Font removed for GDPR, a typo) shows as "Open Sans!>serif", the ! marking
+  // that it never loaded and > what the browser fell back to.
+  const SYS = /^(serif|sans-serif|monospace|cursive|fantasy|system-ui|ui-\w+|-apple-system|BlinkMacSystemFont|Arial|Helvetica( Neue)?|Times( New Roman)?|Georgia|Verdana|Tahoma|Trebuchet MS|Courier( New)?|Segoe UI)$/i;
+  const loadedFams = new Set([...document.fonts].filter(f => f.status === 'loaded').map(f => f.family.replace(/["']/g, '')));
+  const font = e => { const fams = cs(e).fontFamily.split(',').map(f => f.trim().replace(/["']/g, ''));
+    const ok = f => SYS.test(f) || loadedFams.has(f); if (ok(fams[0])) return fams[0];
+    return `${fams[0]}!>${fams.find(ok) || 'browser default'}`; };
+  const t = e => e && `${parseInt(cs(e).fontSize)}px ${cs(e).fontWeight} ${font(e)} ` +
     `${cs(e).textAlign} ${hex(cs(e).color)}${cs(e).textTransform !== 'none' ? ' ' + cs(e).textTransform : ''} "${e.textContent.trim().slice(0, 18)}"`;
   const rows = sec => {
     const seen = new Set(), out = [];

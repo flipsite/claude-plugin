@@ -90,6 +90,12 @@ Detect and report:
   `testimonials`) are often **not in REST at all** (no route in `/wp-json/`): download the URLs of
   their sitemap and parse the HTML; theme pages like "rooms list" or "blog" templates have empty
   `content.rendered` too.
+- **Leftover theme demo content:** ThemeForest themes (Elementy, Avada, BeTheme…) register CPTs
+  such as `portfolio`, `testimonial`, `team`, `client`, `pricing` and their importer leaves the
+  demo items in the sitemap ("Jackson Pollock", "Spacesuit", "Client 12", lorem ipsum). Before
+  counting them in the scope, check that the site's own pages link to them and that their text
+  isn't sample text; when not, list them as "theme demo content, not migrated" instead of building
+  collections for them.
 - **Meta descriptions:** prefer `yoast_head_json.description` (or Rank Math's equivalent) over the
   excerpt, which ends in `[…]` and contains markup. Check them first: when every page has the same
   description (the site default), or the main language's text on translated pages, write one per
@@ -113,7 +119,10 @@ Detect and report:
 - **Dead internal links:** old posts link to pages that no longer exist (`/local-tours/`). `curl`
   every internal link target once; point dead ones to the closest current page instead of
   copying a 404. Strip newsletter/ad tracking wrappers (`r20.rs6.net`, `eot.…/f/a/…`, `fbclid`)
-  to the plain target URL.
+  to the plain target URL. Links to the site's **pre-WordPress addresses**
+  (`http://www.example.de/rechtsanwalt-name.php`, `/kontakt/index.php`) are common in texts copied
+  from an older site: point them to the matching page, and add a `redirect_create` from each old
+  address – they may still be bookmarked or indexed.
 - **Plugin widgets** – flag as out of scope: `instagram-feed` and `feeds-for-youtube` (placeholder
   images under `wp-content/plugins/<plugin>/img/placeholder.png`; their alt texts and descriptions
   are feed content such as captions and full song lyrics – don't copy them as page text), contact
@@ -121,13 +130,22 @@ Detect and report:
   (`use.typekit.net`, not on Google Fonts – pick the closest Google font and say so). A
   `font-family` with no `@font-face` and no Google Fonts link (removed for GDPR) never loads:
   visitors see the browser's fallback (Times for a serif). Use the font the page actually shows
-  and say so.
+  and say so (a Times look: `Tinos`, metric-compatible). The probe and `getComputedStyle` report
+  the *declared* family, not the one that rendered: check with `document.fonts.check('16px "Open
+  Sans"')` or look at the screenshot. Self-hosted Google Fonts (the OMGF plugin) are linked from
+  `/wp-content/uploads/omgf/<handle>/<handle>.css`: the families listed there are the ones that load.
 - **Files** (PDFs of publications, price lists, forms): import them with `assets_import_many` like
   images (10 MB limit) and link them in rich text by asset id, `[PDF](das-gmbh-recht.pdf)` – it
   renders as `/files/<id>`. A Markdown link to a page id (`[Alle Beiträge](news)`) renders as that
   page's URL.
 - **Privacy policy:** it names the old site's tools (Matomo, cookie banners, legal-text widgets,
   the hosting). Copy it as it is, but tell the user the owner has to update it for the new site.
+  Generator policies (eRecht24 and similar) are often 80–100 KB with every chapter left in
+  (Facebook Connect, Klarna, Hotjar…): normalise the heading levels (`h4`/`h5`/`h6` of the WordPress
+  page → `h2`/`h3`/`h4`) and split it at chapter boundaries into several `content-richtext`
+  sections of ≤ 25 KB each – one huge call is slow and easy to get wrong. Complianz cookie
+  policies describe the old site's cookies (reCAPTCHA, `wp-settings-*`) and the Complianz banner;
+  say that they no longer apply.
 - **Booking engines and payment portals** (CampManager, Booking.com, WebHotelier, Beds24): keep
   them as buttons to their URL (`url-blank`); an embedded availability widget becomes a "Check
   availability" strip with that button.
@@ -156,7 +174,15 @@ module, not with regexes.
   (linked in the `<head>`), not in inline styles: download them and grep
   `.elementor-element-<id>{…background-image|background-color…}`. Slider Revolution
   (`rs-module`) keeps slide images in `data-lazyload`.
-  WPBakery: `.vc_row`, `.wpb_wrapper`.
+- **WPBakery (Visual Composer):** REST `content.rendered` holds the raw shortcodes with curly
+  quotes (`[vc_row css=”…”]`) – unusable, scrape the HTML. Rows are `.vc_row`, columns
+  `.vc_column_container` / `.wpb_column` with the width in the class (`vc_col-sm-6` = half),
+  texts in `.wpb_text_column .wpb_wrapper`; `[vc_custom_heading]` renders as a plain `h2`/`h3`
+  with inline `font-size`. Themes built on it (Elementy, Jupiter, Impreza…) often repeat one
+  pattern on every page: a Revolution Slider header (`[rev_slider_vc alias=…]`, a single photo),
+  a big intro heading, then two text columns – parse each page into `{heading, columns: [blocks]}`
+  with `html_to_blocks.py` per column and build all pages from one template section (see
+  "Same layout on every page" in Step 5).
 - **Backgrounds live in CSS, not in `<img>`:** section, slide and hero backgrounds are
   `background-image:url(…)` in inline `<style>` blocks (`.et_pb_section_3{…}`, `.et_pb_slide_1{…}`,
   `.elementor-element-ab12cd{…}`). Collect them per page – they are the page-header photos.
@@ -292,7 +318,8 @@ instead of finding out halfway through the build.
    use name (sections, cms, assets, theme, pages…). Follow them – they beat this file on details.
 2. `site_create` named after the original site (e.g. "example.com – migration"), with the
    original's languages and its public contact email. Never touch the user's other sites.
-3. `version_create` right away ("Empty site") so every later step can be reverted.
+3. A new site already has its first version ("Site created"), so a `version_create` right away
+   answers `created: false` – that's fine, every later step can be reverted to it.
 4. Record in the site's instructions (`site_ai_edit`) where it was migrated from and the agreed scope.
 
 ## Step 5 – Migrate
@@ -355,6 +382,23 @@ Work in this order:
    Set `share` (`page_edit`) to the imported asset of the page's original `og:image`. On every CMS
    template page (`news/:slug`, …) set `share: "{page.image}"`, otherwise every post shares the
    site's default image instead of its own. *(Flipsite gap – remove when fixed)*
+   **Same layout on every page** (the typical theme site: a photo banner, an intro heading, two
+   text columns): build the home page first, compare it with the probe, then reuse it instead of
+   building each page from the library –
+   - the identical banner becomes a custom section (`custom_component_create`), added to each page
+     with `section_create({ sectionLibraryId: "_component1" })` (*not* `sections_create`, which
+     fails for custom sections *(Flipsite gap – remove when fixed)*). An instance keeps its own
+     style, so the home page can have a taller banner (`min-height` on the instance) than the
+     subpages (`min-height` on `_component1`);
+   - the content section is copied with `section_create({ duplicate: "<section id>", pageId })`
+     and its texts set with one `component_edit_many` per few pages
+     (`<id>.heading`, `<id>.container:1.richtext`, `…richtext:1`).
+   **Every page needs one `h1`.** WordPress themes often have none (the page title is an `h2`, or
+   it is in the slider). The library's section-intro heading is the shared custom component
+   `_componentSectionLibrary1` (an `h2`); to make the page's intro heading an `h1`, delete the
+   section's intro container and `component_add` a plain `heading` at index 0, then
+   `component_style_edit` it with `tag: "h1"`, `inherits: ["heading"]` and the original's size and
+   weight.
    Build each from library sections (`section_library_list`/`section_library_get`) that match the
    original's layout, then fill in the real text and images. Bind list sections and the
    `blog/:slug` (or similar) template page to the CMS collections.
@@ -408,7 +452,9 @@ delete the marked text instead of keeping both ways.
   remove the breadcrumb from template page headers.
 - **Menu length:** *(Flipsite gap – remove when fixed)* navigation sections show 4 pages by default (`_options.length` of the `nav`).
   Set it to the original menu's count; Flipsite warns above 5 – keep the original count if that's
-  what the site had and mention the warning.
+  what the site had and mention the warning. Look at the original's screenshot too: themes often
+  list more items than fit (8 in the HTML, 6 visible at 1400 px, the rest cut off). Then show the
+  visible ones and put the others in a footer column, so every page stays reachable.
 - **Social collection:** *(Flipsite gap – remove when fixed)* navigation/footer sections add a sample `social` collection with Flipsite
   links – edit its items to the original's profiles (add/rename, e.g. Messenger → X).
 - **Heading weight:** *(Flipsite gap – remove when fixed)* the shared heading style may keep a weight (`500`) the theme font doesn't
@@ -443,10 +489,13 @@ delete the marked text instead of keeping both ways.
   `heading` instead of the slot.
 - **Rows of similar items** (four facts, five tiles, three steps, two plans): put them in a small
   CMS collection and a library section that repeats it. Static siblings have to be styled one by one
-  (`…container`, `…container:1`, `…container:2` each), and components added inside `component_add`
-  props don't inherit the shared styles – add `"inherits": ["heading"]` to a heading,
-  `["text"]` to a paragraph, `["button"]` to a button and `["richtext"]` to a richtext. An icon in
-  a button needs its own `width`/`height` (16px), or it fills the button on mobile. *(Flipsite gap – remove when fixed)*
+  (`…container`, `…container:1`, `…container:2` each), and components added with `component_add`
+  don't inherit the shared styles: a paragraph renders as a bare `<p>`. Give each one its
+  `inherits` with `component_style_edit` afterwards – `["heading"]` for a heading, `["text"]` for
+  a paragraph, `["button"]` for a button, `["richtext"]` for a richtext. Passing `"inherits"` in
+  the `component_add` **props** does not work: it is stored as a data string (`"[\"text\"]"`) and
+  ignored. An icon in a button needs its own `width`/`height` (16px), or it fills the button on
+  mobile. *(Flipsite gap – remove when fixed)*
 - **A list in two columns read top to bottom** (01–06 left, 07–11 right): keep the items in order
   and give the repeat container `@md { grid-template-columns: 1fr 1fr; grid-template-rows:
   repeat(<half>, auto); grid-auto-flow: column }`.
@@ -491,8 +540,29 @@ delete the marked text instead of keeping both ways.
   `[style=card]` `background-color` of the card containers to the original's card colour.
 - **Hanging calls** *(Flipsite gap – remove when fixed)* (no answer until the client aborts after 300 s): `section_library_list({ category })`
   (use `search`), `component_get` of a deep container (read the whole section) or of a whole
-  navigation section (read `navigation.container`), `component_style_get` of `shared:richtext.h`.
-  Don't wait for them: carry on with other calls and retry the narrower id.
+  navigation section (read `navigation.container`), `component_style_get` of `shared:richtext.h`
+  or of a component just added with `component_add`; `section_library_list({ search: "navigation" })`
+  hung once and answered at once on retry. Don't wait for them: carry on with other calls and
+  retry the narrower id, or write the style without reading it first.
+- **Empty sections:** `sectionLibraryId: "empty"` (the string), not `""` – an empty string is
+  rejected as missing.
+- **Photo banners as section backgrounds are blurry** *(Flipsite gap – remove when fixed)*: a section
+  background image (`section_style_edit({ image })`, or the `_bg` of a custom section) is served
+  at 512 px (1024 px at 2×), and `image.width` on the section is ignored – a full-width banner
+  looks soft on desktop. For a banner without text on it, remove the background
+  (`component_edit` of the custom section with `_bg: null`, or `section_style_edit({ image: "" })`)
+  and `component_add` an `image` to the section instead: `position: absolute; top/left 0;
+  width/height 100%; object-fit: cover`, `image: { width: 1600, loading: "eager", srcset:
+  "responsive" }`, the section `position: relative; overflow: hidden` with the original's
+  `min-height`. Don't set `image.alt` through `component_edit` on the section – `"image.alt"`
+  replaces the whole `image` child.
+- **Contact form layout and consent** *(Flipsite gap – remove when fixed)*: after deleting the
+  last-name and phone fields of `contact-form`, the remaining fields keep `sm:col-span-2`, so the
+  first field sits in a half-width column: make the fields container `display: flex;
+  flex-direction: column; align-items: stretch` (`@sm: null`). A consent checkbox added through
+  `component_add(layout-h, { checkbox: … })` renders as `<input>` without a type – set
+  `checkbox._attr.type: "checkbox"`. Form labels don't render Markdown: write the label as plain
+  text and add a `link` to the privacy page next to it.
 
 ## Step 6 – Test and tweak
 
@@ -506,7 +576,8 @@ delete the marked text instead of keeping both ways.
      `uv run --with playwright python scripts/layout_probe.py <original url> <preview url> --out <scratchpad>/probe`
      – headless Chromium at 1400 px (downloaded once, ~150 MB, the first run does it). It prints
      one line per section of each page and saves `original.png` / `preview.png` full-page
-     screenshots; `--section "Camping Pitches"` also saves that section of both pages side by side
+     screenshots (common cookie banners hidden). A font shown as `Open Sans!>browser default`
+     is declared but never loaded – match the fallback that rendered, not the declared name; `--section "Camping Pitches"` also saves that section of both pages side by side
      to `Read`, `--styles ".et_pb_button_3"` prints the computed font, colours, padding and
      border of an element, `--width 390` checks the mobile layout. Without `uv`:
      `pip install playwright` and `python scripts/layout_probe.py …`.
