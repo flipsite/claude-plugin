@@ -171,6 +171,38 @@ module, not with regexes.
   URLs and use a flat menu of the main pages (`_options.pages`), with the rest in footer columns;
   don't move pages to nested slugs just to get a dropdown.
 
+### Sites that are not WordPress (Next.js, Webflow, Framer, Wix, hand-made)
+
+- **Platform hints:** `x-powered-by` and the HTML (`_next/`, `__NEXT_DATA__` → Next.js;
+  `webflow`, `framerusercontent`, `wixstatic`, `squarespace`). The sitemap is usually
+  `/sitemap.xml`; group its URLs by the first path segment to find the collections
+  (`/blog/*`, `/use-cases/*`, `/compare/*` → one CMS collection with a template page each).
+- **Content:** most of these render on the server – `curl` the page and parse `main > section`.
+  When `main` is empty in the HTML (a client-rendered app), take the rendered HTML from the headless
+  browser instead (`page.content()` in Playwright). Convert each section with
+  `scripts/html_to_blocks.py`: it handles tables, `<pre>` code, blockquotes and images from any
+  host. Framework image URLs (`/_next/image?url=…`) hold the real file in `url=`.
+- **Images without an extension** (`https://api.example.com/images/<id>`): import with a
+  `filename` without extension – Flipsite adds the right one (`cover` → `cover.jpg`).
+- **Illustrations built in HTML/CSS** (chat windows, dashboards, cards, funnels, code boxes – common
+  on SaaS sites) have no image file. Capture them with
+  `uv run --with playwright python scripts/capture_elements.py URL --list` (candidates per section,
+  with a selector) and then `capture_elements.py URL --out DIR "selector=name" …`: 2× PNGs of the
+  elements, fixed headers and cookie banners hidden, with *prefers-reduced-motion*, which makes most
+  animated mockups show their finished state (`--motion --wait 12` otherwise; look at every PNG).
+  Upload them with `assets_upload_url` + `curl -F`, and never crop them: on the image set
+  `aspect-ratio: auto`, `object-fit: contain`, no radius, and `image.width` = the width it had on the
+  original (the file has 2×). Text the visitor reads stays real text.
+- **Highlighted words in headings** (a coloured background on one word): write the word as
+  `**bold**` and style the bold of the section heading once:
+  `component_style_edit("_componentSectionLibrary1.heading.strong", { background-color, color,
+  border-radius, padding-inline: "0.15em", white-space: "nowrap" })`.
+- **Sign-up forms, log-ins and in-page apps** (`/#register`, a chat box that answers questions)
+  belong to the product, not the site: link the buttons to the app's own sign-up or log-in page and
+  list the decision in the report.
+- **Videos** from the site itself (`/video/*.mp4`) import directly when under 10 MB; add a `video`
+  component with its `poster`.
+
 ### Multilingual sites (Polylang, WPML)
 
 - **Pair the translations** from the `<link rel="alternate" hreflang="xx" href="…">` of each page's
@@ -380,6 +412,18 @@ out and list it.
   text): set them once on `_componentSectionLibrary1.heading` / `.paragraph` (it changes every
   section, which is what you want). A section whose heading differs (a 60px banner) gets a plain
   `heading` instead of the slot.
+- **Rows of similar items** (four facts, five tiles, three steps, two plans): put them in a small
+  CMS collection and a library section that repeats it. Static siblings have to be styled one by one
+  (`…container`, `…container:1`, `…container:2` each), and a `heading` added inside `component_add`
+  props doesn't inherit the shared heading style – add `"inherits": ["heading"]` to its style.
+- **Code in text:** CMS text fields and paragraphs drop anything that looks like an HTML tag, also
+  in backticks (`<script …>` disappears). Show code in a richtext `codeBlock`.
+- **Richtext fields in library lists:** `faq-list`/`faq-accordion` bind the answer to a
+  `paragraph`; after changing the `answer` field to richtext, replace that paragraph by a `richtext`
+  component with `{answer}`, or the formatting and links are lost.
+- **Text and card colours of the original:** body text follows the theme's gray scale; set
+  `shared:text` and `shared:richtext.p` `color` (and `@dark`) to the original's text colour, and the
+  `[style=card]` `background-color` of the card containers to the original's card colour.
 - **Hanging calls:** besides `section_library_list({ category })`, `component_get` of a deep
   container can hang until the client aborts (300 s); read the whole section instead.
 

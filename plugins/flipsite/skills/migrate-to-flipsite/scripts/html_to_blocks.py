@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
-"""Convert WordPress HTML (REST content.rendered or a page body) into Flipsite richtext blocks.
+"""Convert HTML (WordPress REST content.rendered, or the main content of any page) into Flipsite richtext blocks.
 
 Usage: python3 html_to_blocks.py page.html > blocks.json   (or import blocks() from it)
 
 Handles what WordPress content usually has: headings, paragraphs, ul/ol, <strong>/<em> as
 Markdown, links as [text](url), images (also inside lightbox links and floated inside a
 paragraph: they are moved after the paragraph instead of splitting it), YouTube iframes as
-youtube blocks. Image URLs keep their original upload (the -WxH thumbnail suffix is removed);
-map them to the imported asset ids before creating items. h1 becomes h2 (the page has its own h1).
+youtube blocks, tables as table blocks (first row as header when it has <th>), <pre> as codeBlock,
+<blockquote> as quote. WordPress image URLs keep their original upload (the -WxH thumbnail suffix
+is removed); map all image URLs to the imported asset ids before creating items. h1 becomes h2
+(the page has its own h1).
 """
 import json
 import re
@@ -32,8 +34,12 @@ class _Parser(HTMLParser):
         super().__init__(convert_charrefs=True)
         self.out, self.buf, self.tag = [], '', None
         self.list, self.items, self.skip, self.href, self.imgs = None, None, 0, None, []
+        self.table, self.row, self.cell, self.th = None, None, None, False
+        self.pre, self.inquote = None, False
 
     def flush(self):
+        if self.cell is not None or self.pre is not None:
+            return
         text = re.sub(r'\s+', ' ', self.buf.replace('\xa0', ' ')).strip()
         text = _tidy(text)
         self.buf = ''
@@ -43,7 +49,13 @@ class _Parser(HTMLParser):
                 self.items.append(text)
             else:
                 tag = self.tag if self.tag in ('h2', 'h3', 'h4', 'h5', 'h6') else ('h2' if self.tag == 'h1' else 'p')
-                self.out.append({'type': tag, 'value': text})
+                if self.inquote:
+                    tag = 'quote'
+                    if self.out and self.out[-1]['type'] == 'quote' and self.out[-1].get('_open'):
+                        self.out[-1]['value'] += ' ' + text
+                        self.out.extend(imgs)
+                        return
+                self.out.append({'type': tag, 'value': text, **({'_open': True} if tag == 'quote' else {})})
         self.out.extend(imgs)
 
     def handle_starttag(self, t, a):
@@ -52,6 +64,34 @@ class _Parser(HTMLParser):
             self.skip += 1
             return
         if self.skip:
+            return
+        if self.pre is not None:
+            return
+        if t == 'pre':
+            self.flush()
+            self.pre = ''
+            return
+        if t == 'table':
+            self.flush()
+            self.table, self.th = [], False
+            return
+        if self.table is not None:
+            if t == 'tr':
+                self.row = []
+            elif t in ('td', 'th'):
+                self.th = self.th or (t == 'th' and not self.table)
+                self.cell, self.buf = '', ''
+            elif t in ('strong', 'b'):
+                self.buf += '**'
+            elif t == 'a':
+                self.href = a.get('href')
+                self.buf += '['
+            elif t == 'br':
+                self.buf += ' '
+            return
+        if t == 'blockquote':
+            self.flush()
+            self.inquote = True
             return
         if t in ('ul', 'ol'):
             self.flush()
@@ -69,9 +109,11 @@ class _Parser(HTMLParser):
             self.href = a.get('href')
             self.buf += '['
         elif t == 'img':
-            src = (a.get('data-src') or a.get('src') or '').split('?')[0]
-            if 'uploads' in src:
-                self.imgs.append({'type': 'img', 'value': re.sub(r'-\d+x\d+(?=\.\w+$)', '', src),
+            src = a.get('data-src') or a.get('src') or ''
+            if src and not src.startswith('data:'):
+                if '/wp-content/uploads/' in src:
+                    src = re.sub(r'-\d+x\d+(?=\.\w+$)', '', src.split('?')[0])
+                self.imgs.append({'type': 'img', 'value': src,
                                   **({'alt': a['alt']} if a.get('alt') else {})})
         elif t == 'iframe':
             y = re.search(r'youtube(?:-nocookie)?\.com/embed/([\w-]+)', a.get('src') or '')
@@ -84,6 +126,41 @@ class _Parser(HTMLParser):
             self.skip -= 1
             return
         if self.skip:
+            return
+        if self.pre is not None:
+            if t == 'pre':
+                code, self.pre = self.pre.strip('\n'), None
+                if code.strip():
+                    self.out.append({'type': 'codeBlock', 'value': code})
+            return
+        if self.table is not None:
+            if t in ('td', 'th') and self.cell is not None:
+                txt = _tidy(re.sub(r'\s+', ' ', self.buf.replace('\xa0', ' ')))
+                self.cell, self.buf = None, ''
+                if self.row is not None:
+                    self.row.append(txt)
+            elif t == 'tr' and self.row is not None:
+                if any(self.row):
+                    self.table.append(self.row)
+                self.row = None
+            elif t == 'table':
+                if self.table:
+                    w = max(len(r) for r in self.table)
+                    self.out.append({'type': 'table', 'header': self.th,
+                                     'td': [r + [''] * (w - len(r)) for r in self.table]})
+                self.table = None
+            elif t in ('strong', 'b'):
+                self.buf += '**'
+            elif t == 'a':
+                i = self.buf.rfind('[')
+                txt = self.buf[i + 1:].strip()
+                self.buf = self.buf[:i] + (f'[{txt}]({self.href})' if txt and self.href and not self.href.startswith('#') else txt)
+            return
+        if t == 'blockquote':
+            self.flush()
+            self.inquote, self.tag = False, None
+            for b in self.out:
+                b.pop('_open', None)
             return
         if t in ('strong', 'b'):
             self.buf += '**'
@@ -104,7 +181,11 @@ class _Parser(HTMLParser):
             self.tag = None
 
     def handle_data(self, d):
-        if not self.skip:
+        if self.skip:
+            return
+        if self.pre is not None:
+            self.pre += d
+        else:
             self.buf += d
 
 
@@ -112,6 +193,8 @@ def blocks(html):
     p = _Parser()
     p.feed(html)
     p.flush()
+    for b in p.out:
+        b.pop('_open', None)
     return p.out
 
 
