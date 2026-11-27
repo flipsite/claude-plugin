@@ -522,9 +522,9 @@ delete the marked text instead of keeping both ways.
   visible ones and put the others in a footer column, so every page stays reachable.
 - **Social collection:** *(Flipsite gap – remove when fixed)* navigation/footer sections add a sample `social` collection with Flipsite
   links – edit its items to the original's profiles (add/rename, e.g. Messenger → X).
-- **Heading weight:** *(Flipsite gap – remove when fixed)* the shared heading style may keep a weight (`500`) the theme font doesn't
-  load; set `shared:heading` `font-weight` to the loaded heading weight, plus `text-transform` if
-  the original uses uppercase headings.
+- **Heading weight and case:** the weight of text is the one its font loads – there is no
+  `font-weight`. Load the original's heading weight with `theme_edit` (`fonts.headings.weights`),
+  and set `shared:heading` `text-transform` if the original uses uppercase headings.
 - **Lazy images:** background images can look missing in a screenshot taken right after load –
   wait ~2 s and scroll before concluding an image is broken.
 - **PNG/JPG logos render nothing:** *(Flipsite gap – remove when fixed)* navigation, footer and `trust-logos` sections set
@@ -588,7 +588,8 @@ delete the marked text instead of keeping both ways.
   row and column rather than two independent column stacks.
 - **Quote with a portrait:** a richtext `quote` block has no photo. Use a row: a 56 px round
   `image` (`border-radius: 9999px`, `object-fit: cover`, `flex-shrink: 0`) next to a column with the
-  quote paragraph and the caption, styled from the original (size, colour, `font-style`).
+  quote paragraph and the caption, styled from the original (size, colour; italic is
+  `font-family: body-italic`).
 - **Links in section intros** ("See all FAQs →", "See the setup guide →"): write them as a Markdown
   link in the Description slot and style `_componentSectionLibrary1.paragraph.a` once (colour,
   `font-family: body-bold`, `text-decoration-line: none`). When the original puts that link to
