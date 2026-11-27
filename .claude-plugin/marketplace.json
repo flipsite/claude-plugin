@@ -11,7 +11,7 @@
       "name": "flipsite",
       "source": "./plugins/flipsite",
       "description": "Make a slow WordPress site fast, SEO-friendly and easy to edit: /migrate-to-flipsite rebuilds it on Flipsite with every page, language and URL kept, content in a CMS separate from layout, and an optional PageSpeed (Lighthouse) comparison of the original and the result. Also connects the Flipsite MCP server, so Claude can keep editing the site.",
-      "version": "0.2.4",
+      "version": "0.2.5",
       "category": "productivity",
       "keywords": [
         "wordpress",

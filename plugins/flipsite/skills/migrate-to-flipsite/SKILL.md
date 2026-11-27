@@ -431,7 +431,6 @@ Work in this order:
    list filtered with `_options: { filterField: "group", filterType: "or", filter: ["vans"] }`.
    Cards that link to pages (the "stay with us" cards of a home page) are a small collection from
    the `services` sample (its `page` field links each card).
-   `cms_items_create` answers with every item in full: create big batches once and don't repeat. *(Flipsite gap – remove when fixed)*
    Converting WordPress post HTML to rich text blocks – write a small script (scratchpad) and then
    clean up these artefacts before creating items:
    - lightbox images (`<a href="…jpg"><img></a>`) become empty links `[](…jpg)` – turn them into
