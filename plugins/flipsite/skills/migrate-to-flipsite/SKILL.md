@@ -123,6 +123,10 @@ Detect and report:
   (`http://www.example.de/rechtsanwalt-name.php`, `/kontakt/index.php`) are common in texts copied
   from an older site: point them to the matching page, and add a `redirect_create` from each old
   address – they may still be bookmarked or indexed.
+- **Leftover shortcodes of an earlier theme:** old posts can hold the shortcodes of a builder the
+  site no longer uses (`[fusion_builder_container …]` of Avada) as plain text in
+  `content.rendered`, with image URLs as bare text. Strip `\[/?(fusion|vc|et_pb)_[^\]]*\]` before
+  converting, drop paragraphs that are only an image URL, and write those posts' descriptions anew.
 - **Plugin widgets** – flag as out of scope: `instagram-feed` and `feeds-for-youtube` (placeholder
   images under `wp-content/plugins/<plugin>/img/placeholder.png`; their alt texts and descriptions
   are feed content such as captions and full song lyrics – don't copy them as page text), contact
@@ -235,6 +239,30 @@ module, not with regexes.
   labels), but Flipsite dropdowns list the pages nested under a parent slug. Keep the original flat
   URLs and use a flat menu of the main pages (`_options.pages`), with the rest in footer columns;
   don't move pages to nested slugs just to get a dropdown.
+
+### Block themes (Gutenberg with Stackable, Kadence, GenerateBlocks)
+
+Recognise them by `wp-block-stackable-*` / `stk-block` (Stackable), `wp-block-kadence-*`,
+`wp-block-generateblocks-*` classes and a theme without a builder plugin. REST `content.rendered`
+is complete, but it is the block markup: parse the rendered page instead, it has the backgrounds.
+- **The page is a list of top-level blocks** in `.entry-content` (`.entry-content > *`). Pages
+  of these themes have several `.entry-content` elements (one per template part); take the first.
+  Group each block's headings, texts, images and buttons by their column
+  (`.stk-block-column` / `.wp-block-column`): 2 columns with one only media → text+image section,
+  ≥3 columns each with a heading → a card row, a heading + text only → a text section.
+  `layout_probe.py` finds these blocks.
+- **Lazy images:** Smush/`lazyload` put a 1 px SVG in `src` and the real file in `data-src` /
+  `data-srcset`. Read `data-src` first.
+- **Backgrounds are per-block CSS**, `.stk-<7 hex>{background-image:url(…)}` in the page's
+  `<style>` blocks, keyed by the `stk-…` class of the block or column.
+- **Smush AVIF/WebP URLs** (`/wp-content/smush-avif/2026/02/seeds-14.jpg.avif`) are the original
+  upload with `.avif` added: drop `smush-avif/` → `uploads/` and the `.avif`. When the *upload
+  itself* is AVIF (`apple-7.avif`) there's no JPG original: take the largest `-WxH.jpg` of it in
+  the HTML (`apple-7-1200x900.jpg`); some only have a 150 px thumbnail, leave those out.
+- **Card rows that link elsewhere** often have the link on the whole card, the "Learn More" button
+  an empty `<a>`: match the card heading to a page name instead.
+- **Many card rows on many pages** (here 160 cards in 39 rows): one `services`-sample collection
+  with a `group` text field and a `link`/`linktext` pair, each section filtered on its group.
 
 ### Sites that are not WordPress (Next.js, Webflow, Framer, Wix, hand-made)
 
@@ -375,7 +403,9 @@ fewer, migrate everything and just say so.
 **Plan limits:** Flipsite's free plan has one language, 100 CMS items and 50 MB of files per site
 (https://flipsite.io/pricing/; paid plans have 6 languages and 1,000 items). When the scope needs
 more (a multilingual site, hundreds of posts, a large image library), say so in the scope question
-instead of finding out halfway through the build.
+instead of finding out halfway through the build. The MCP doesn't say which plan the account has
+*(Flipsite gap – remove when fixed, flipsite/editor#1986)*: a site with more than one language in
+`sites_list` means a paid plan; otherwise ask the user.
 
 ## Step 4 – Create the Flipsite project
 
@@ -401,7 +431,10 @@ Work in this order:
    the original URLs (prefer the full-size file, not `-300x200` WordPress thumbnails). Keep the
    alt texts. Collect the new asset ids per original URL. On WordPress:
    - Stripping the `-WxH` suffix gives the original upload, which can be over the 10 MB import
-     limit (10–20 MB camera files are common). `curl -sI` every URL first (in parallel) and for
+     limit (10–20 MB camera files are common). `curl -sI` every URL first – **at most 4 in
+     parallel**: hundreds of requests at 16 parallel got the client's IP blocked by the origin's
+     firewall for the rest of the migration (Flipsite's own imports still worked). The sizes are
+     also in REST: `/wp-json/wp/v2/media?include=<ids>&_fields=source_url,media_details`. For
      files over ~9.5 MB use the `-scaled` variant (`name-scaled.jpg`, max 2560 px), or else the
      largest size in the `srcset`. Featured images from `_embed` usually are `-scaled` already.
    - Normalise `http://` → `https://` and dedupe before importing; the same file often appears
@@ -416,7 +449,10 @@ Work in this order:
      YouTube post, the video thumbnail (`https://img.youtube.com/vi/<id>/hqdefault.jpg`).
 3. **CMS** – content that repeats goes in the CMS, not in hand-made sections: posts/news, team,
    events, products, testimonials, FAQs, partners/logos. `cms_collection_samples_list` →
-   `cms_collection_create`, add fields matching the source (title, slug, date, excerpt, image,
+   `cms_collection_create`, always with `collectionId` equal to the `sampleId`
+   (`{ sampleId: "blog", collectionId: "blog", name: "News" }`): with only a `name` the id is made
+   from the name (`news`) and the library sections keep looking for `blog`. *(Flipsite gap – remove
+   when fixed, flipsite/editor#1985)* Add fields matching the source (title, slug, date, excerpt, image,
    body as rich text, category), then `cms_items_create`. Keep the original slugs.
    There is no sample for rooms/accommodation: make one (`image`, `heading`, `slug`, `beds`,
    `description`, `body` richtext with features and policies, `gallery`, `published`) and list it
@@ -431,7 +467,12 @@ Work in this order:
    list filtered with `_options: { filterField: "group", filterType: "or", filter: ["vans"] }`.
    Cards that link to pages (the "stay with us" cards of a home page) are a small collection from
    the `services` sample (its `page` field links each card).
-   `cms_items_create` answers with every item in full: create big batches once and don't repeat. *(Flipsite gap – remove when fixed)*
+   `cms_items_create` answers with every item in full: create big batches once and don't repeat. *(Flipsite gap – remove when fixed, flipsite/editor#1956, #1972)*
+   A news archive is the biggest token cost of a migration (69 posts ≈ 200 KB of richtext, all of it
+   printed and retyped as tool arguments): write the items to JSON files in the scratchpad, split
+   them into batches of ~22 KB (larger shell output gets cut off), and fix the content in the script
+   before printing, not by hand while retyping. When the posts go back years, say in the scope
+   question that the oldest ones cost as much as the new ones.
    Converting WordPress post HTML to rich text blocks – write a small script (scratchpad) and then
    clean up these artefacts before creating items:
    - lightbox images (`<a href="…jpg"><img></a>`) become empty links `[](…jpg)` – turn them into
