@@ -151,7 +151,9 @@ Detect and report:
   page → `h2`/`h3`/`h4`) and split it at chapter boundaries into several `content-richtext`
   sections of ≤ 25 KB each – one huge call is slow and easy to get wrong. Complianz cookie
   policies describe the old site's cookies (reCAPTCHA, `wp-settings-*`) and the Complianz banner;
-  say that they no longer apply.
+  say that they no longer apply. Their "Placed cookies" chapter is a list of 100+ cookie names
+  with empty Expiration/Function headings (`wp-settings-*`, `wc_cart_hash_*`, `wf_loginalerted_*`):
+  leave that chapter out rather than copying it, and keep the rest for the owner to update.
 - **Booking engines and payment portals** (CampManager, Booking.com, WebHotelier, Beds24): keep
   them as buttons to their URL (`url-blank`); an embedded availability widget becomes a "Check
   availability" strip with that button.
@@ -459,14 +461,31 @@ Work in this order:
    with `news-cards` (remove the date paragraph and the `sortBy: date` of its repeat). *(Flipsite gap – remove when fixed)*
    Samples that need changing for existing content: `events` requires `date` (make it optional
    with `cms_field_edit` when the source lists events without dates, and hide the date badge of
-   `events-list` with a render filter `date notEmpty`, remove its `{starts}–{ends}` row and add a
-   link to `{slugUrl}`); the `faq` answer is plain text (change it to `richtext` for answers with
+   `events-list` with a render filter `date notEmpty`, remove its `{starts}–{ends}` row – it shows
+   the raw placeholders on items without times – and add a link to `{slugUrl}`; for times add a
+   `time` text field ("10:00–16:30") and a paragraph `{time}` with a render filter `time
+   notEmpty`). When every event is past (a site migrated after its season), sort the home list
+   `desc` with `_options.length: 3` and call it "Recent events" rather than showing an empty
+   "Upcoming events"; the `faq` answer is plain text (change it to `richtext` for answers with
    lists and links); `for-sale` has no `slug`, `body`, `gallery` or pages (add them, a template page,
    and a "View" link to `{slugUrl}` in `product-for-sale`). *(Flipsite gap – remove when fixed)* Features or amenities shown per page
    (facilities of the vans, of the pods…) go in **one** collection with a `group` enum field, each
    list filtered with `_options: { filterField: "group", filterType: "or", filter: ["vans"] }`.
    Cards that link to pages (the "stay with us" cards of a home page) are a small collection from
    the `services` sample (its `page` field links each card).
+   **Many card rows across many pages** (a block theme repeats "image + heading + text + Learn
+   More" rows on every page): put all of them in that one `services` collection with a `group`
+   (`<page>-<block index>`) and `link`/`linktext` fields, and give each card section a
+   predictable name (`Cards <page> b`) so its id is known without `sections_list`
+   (`cards-<page>-b`). Then filter all of them in one `component_edit_many`:
+   `{ componentId: "cards-<page>-b.container:1", props: { _options: { filterField: "group",
+   filterType: "or", filter: ["<group>"] }, "container.container.link": { _action: "auto",
+   _target: "{link}", text: "{linktext}", sr: "about {heading}", icon:
+   "zondicons/arrow-right.svg", _options: { render: { filterField: "link", filterType:
+   "notEmpty" } } } } }`. `component_edit_many` takes **at most 50 edits** and checks that only
+   after the whole payload: split before sending. *(Flipsite gap – remove when fixed, flipsite/editor#1987)*
+   Section names become ids with their punctuation (`planting-seeds,-preserving-heritage`): name
+   sections without commas and apostrophes. *(Flipsite gap – remove when fixed, flipsite/editor#1989)*
    `cms_items_create` answers with every item in full: create big batches once and don't repeat. *(Flipsite gap – remove when fixed, flipsite/editor#1956, #1972)*
    A news archive is the biggest token cost of a migration (69 posts ≈ 200 KB of richtext, all of it
    printed and retyped as tool arguments): write the items to JSON files in the scratchpad, split
@@ -485,6 +504,9 @@ Work in this order:
    - drop leftover `###`, `DOWNLOAD` and similar button labels;
    - write descriptions of ≤160 characters cut at a sentence, not the raw excerpt.
 4. **Pages** – `page_create` per page in scope with the original slug, title and meta description.
+   An explicit `title` is used as it is: without one the page gets `<name> - <site title>`, with
+   one the brand is gone. Keep the original's `… | Brand` titles whole, and check `effectiveTitle`
+   in the answer. *(Flipsite gap – remove when fixed, flipsite/editor#1989)*
    Set `share` (`page_edit`) to the imported asset of the page's original `og:image`. On every CMS
    template page (`news/:slug`, …) set `share: "{page.image}"`, otherwise every post shares the
    site's default image instead of its own. *(Flipsite gap – remove when fixed)*
@@ -520,7 +542,10 @@ Work in this order:
 6. **Redirects** – if any URL changes (e.g. `/2024/05/post-name/` → `/news/post-name`), add a
    `redirect_create` so old links keep working. Also for pages that are merged (a "rooms list"
    page into the rooms page) and the WordPress category archives (`category/news`, per language)
-   → the news page.
+   → the news page. There is no bulk or wildcard redirect and each answer lists **all**
+   redirects (40 redirects ≈ 40 calls with growing answers): redirect what was linked or indexed
+   (CPT item pages such as `our-team/<slug>` → the team page, category archives), not every
+   attachment URL. *(Flipsite gap – remove when fixed, flipsite/editor#1960)*
 
 Rewrite links to point at the new pages. Don't invent content – if something is missing, leave it
 out and list it.
@@ -542,6 +567,8 @@ delete the marked text instead of keeping both ways.
   `{site.phone}`. Without a phone, `page_check` reports sample data – remove that button (or the
   container holding it) on every such section. With a phone they are fine but not on the original:
   remove them in one `component_edit_many` (`{ componentId: "<header>.container", props: { container: null } }`).
+  `cta-band` and `book-a-tour` add a second, phone button as well: `{ componentId:
+  "<cta>.container.container:1", props: { "button:1": null } }`.
 - **Contact form fields:** *(Flipsite gap – remove when fixed)* `contact-form` has first name, last name, email, phone and message.
   Rename labels **and** `_attr.name`/`id`/`for` to match the original form, and delete fields it
   didn't have. Its message `textarea` has `name: "name"` (the same as the name field): set it to
@@ -566,8 +593,9 @@ delete the marked text instead of keeping both ways.
 - **Heading weight and case:** the weight of text is the one its font loads – there is no
   `font-weight`. Load the original's heading weight with `theme_edit` (`fonts.headings.weights`),
   and set `shared:heading` `text-transform` if the original uses uppercase headings.
-- **Lazy images:** background images can look missing in a screenshot taken right after load –
-  wait ~2 s and scroll before concluding an image is broken.
+- **Lazy images:** images further down load only when scrolled near: a full-page screenshot
+  after one jump to the bottom shows empty boxes. Scroll in steps (`for y in range(0, h, 700)`,
+  150 ms each), wait ~1.5 s, then take it – before concluding an image is broken.
 - **PNG/JPG logos render nothing:** *(Flipsite gap – remove when fixed)* navigation, footer and `trust-logos` sections set
   `image.inlineSvg: true`; with a raster logo the header is empty and `page_check` says ok. Set
   `inlineSvg: false` on every logo image that isn't an SVG (`navigation…container.image`,
@@ -645,6 +673,15 @@ delete the marked text instead of keeping both ways.
 - **Text and card colours of the original:** body text follows the theme's gray scale; set
   `shared:text` and `shared:richtext.p` `color` (and `@dark`) to the original's text colour, and the
   `[style=card]` `background-color` of the card containers to the original's card colour.
+- **Errors without a message** (`Error POSTing to endpoint:`, `ECONNREFUSED`, "not connected"):
+  the server or the network was down and the answer doesn't say whether the write happened. List
+  first (`cms_items_list`, `redirects_list`, `sections_list`) and resend only what is missing.
+  *(Flipsite gap – remove when fixed, flipsite/editor#1987)*
+- **Left-out props get example content:** *(Flipsite gap – remove when fixed, flipsite/editor#1988)*
+  a library prop you don't pass is filled with the library's example, not left empty –
+  `cta-image-panel` without `button2` gets "See our gardens" → page `about` (which doesn't exist),
+  and `page_check` says ok. Pass every optional prop you don't want as `null`
+  (`button2: null, button2Action: null, tagline: null`).
 - **Empty sections:** `sectionLibraryId: "empty"` (the string), not `""` – an empty string is
   rejected as missing.
 - **Photo banners as section backgrounds are blurry** *(Flipsite gap – remove when fixed)*: a section
