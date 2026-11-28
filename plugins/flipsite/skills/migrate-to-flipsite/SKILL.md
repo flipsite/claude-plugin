@@ -486,12 +486,11 @@ Work in this order:
    after the whole payload: split before sending. *(Flipsite gap – remove when fixed, flipsite/editor#1987)*
    Section names become ids with their punctuation (`planting-seeds,-preserving-heritage`): name
    sections without commas and apostrophes. *(Flipsite gap – remove when fixed, flipsite/editor#1989)*
-   `cms_items_create` answers with every item in full: create big batches once and don't repeat. *(Flipsite gap – remove when fixed, flipsite/editor#1956, #1972)*
    A news archive is the biggest token cost of a migration (69 posts ≈ 200 KB of richtext, all of it
    printed and retyped as tool arguments): write the items to JSON files in the scratchpad, split
    them into batches of ~22 KB (larger shell output gets cut off), and fix the content in the script
    before printing, not by hand while retyping. When the posts go back years, say in the scope
-   question that the oldest ones cost as much as the new ones.
+   question that the oldest ones cost as much as the new ones. *(Flipsite gap – remove when fixed, flipsite/editor#1972)*
    Converting WordPress post HTML to rich text blocks – write a small script (scratchpad) and then
    clean up these artefacts before creating items:
    - lightbox images (`<a href="…jpg"><img></a>`) become empty links `[](…jpg)` – turn them into
