@@ -81,7 +81,7 @@ def probe(page, url, name, out, width, section, styles):
         # Crop the section out of a full-page shot taken at scroll 0: scrolling to the element would
         # turn sticky headers on (Divi does it with JavaScript) and cover the top of the section.
         box = page.evaluate(
-            """n => { const all = [...document.querySelectorAll('.et_pb_section,.elementor-top-section,.e-con.e-parent,.vc_row:not(.vc_inner),main > section,body > section,.entry-content > .wp-block-group,.entry-content > .wp-block-cover,.entry-content > .wp-block-columns,#PAGES_CONTAINER section:not(section section)')]
+            """n => { const all = [...document.querySelectorAll('.et_pb_section,.elementor-top-section,.e-con.e-parent,.vc_row:not(.vc_inner),main > section,body > section,.entry-content > .wp-block-group,.entry-content > .wp-block-cover,.entry-content > .wp-block-columns,.entry-content > [class*="wp-block-stackable-"],.entry-content > .wp-block-kadence-rowlayout,.entry-content > .wp-block-generateblocks-container,#PAGES_CONTAINER section:not(section section)')]
                  .filter(e => { const r = e.getBoundingClientRect(); return r.width > 20 && r.height > 20; });
                const s = /^\\d+$/.test(n) ? all[+n]
                  : all.find(e => e.textContent.toLowerCase().includes(n.toLowerCase()));
